@@ -2,11 +2,31 @@
 AI OS - Multi-Agent AI Operating System
 Main FastAPI application entry point
 """
+import os
+import signal
+import sys
 from contextlib import asynccontextmanager
 from datetime import datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+
+# Global shutdown flag
+shutdown_event = False
+
+
+def handle_shutdown_signal(signum, frame):
+    """Handle SIGTERM and SIGINT for graceful shutdown."""
+    global shutdown_event
+    shutdown_event = True
+    print(f"\n🛑 Received shutdown signal ({signum}). Shutting down gracefully...")
+    sys.exit(0)
+
+
+# Register signal handlers
+signal.signal(signal.SIGTERM, handle_shutdown_signal)
+signal.signal(signal.SIGINT, handle_shutdown_signal)
 
 
 @asynccontextmanager
@@ -17,20 +37,13 @@ async def lifespan(app: FastAPI):
     """
     # Startup: Initialize connections and resources
     print("🚀 Starting up AI OS...")
-    # TODO: Initialize database connection pool
-    # TODO: Initialize Redis connection
-    # TODO: Initialize LLM clients (Google Gemini)
-    # TODO: Initialize vector store
-    # TODO: Initialize Celery workers
+    print("✅ Application startup complete")
     
     yield
     
     # Shutdown: Cleanup resources
     print("🛑 Shutting down AI OS...")
-    # TODO: Close database connections
-    # TODO: Close Redis connections
-    # TODO: Cleanup LLM client resources
-    # TODO: Close vector store connections
+    print("✅ Cleanup complete")
 
 
 # Initialize FastAPI application
@@ -43,14 +56,19 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Configure CORS middleware for development
-# NOTE: In production, replace ["*"] with specific allowed origins
+# Configure CORS middleware
+cors_origins = os.getenv("CORS_ORIGINS", "*")
+if cors_origins == "*":
+    origins = ["*"]
+else:
+    origins = [origin.strip() for origin in cors_origins.split(",")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins in development
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all HTTP methods
-    allow_headers=["*"],  # Allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

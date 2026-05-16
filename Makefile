@@ -14,7 +14,7 @@ install:
 # Run FastAPI application with hot reload
 run:
 	@echo "🚀 Starting AI OS..."
-	uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	uvicorn app.main:app --reload --host 0.0.0.0 --port $${PORT:-8000}
 
 # Start Docker services in detached mode
 docker-up:
