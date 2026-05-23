@@ -1,33 +1,54 @@
-# ============================================
-# AI OS - Docker Container Configuration
-# ============================================
+# Stage 1: Builder
+FROM python:3.12-slim AS builder
 
-# Use Python 3.12 slim image as base
-FROM python:3.12-slim
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# Set working directory
-WORKDIR /app
+WORKDIR /build
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
-    postgresql-client \
+    libpq-dev \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements file
+# Install python dependencies
 COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+
+# Stage 2: Runtime
+FROM python:3.12-slim AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/install/bin:$PATH" \
+    PYTHONPATH="/app:/install/lib/python3.12/site-packages"
+
+WORKDIR /app
+
+# Install runtime dependencies (curl for healthcheck)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy installed packages from builder
+COPY --from=builder /install /install
+
+# Create non-root user
+RUN addgroup --system appgroup && adduser --system appuser --ingroup appgroup
+USER appuser
 
 # Copy application code
-COPY app/ ./app/
+COPY --chown=appuser:appgroup ./app /app/app
 
-# Expose port
 EXPOSE 8000
 
-# Set environment variable for port
-ENV PORT=8000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
 
-# Run application with shell to support environment variable expansion
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT}
+# Default command (overridden in docker-compose for worker)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

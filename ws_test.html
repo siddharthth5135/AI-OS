@@ -1,0 +1,36 @@
+<!DOCTYPE html><html><head><title>AI OS WS Test</title></head><body>
+<h2>AI OS WebSocket Test</h2>
+<input id='token' placeholder='Paste access_token here' style='width:400px'><br><br>
+<button onclick='connect()'>Connect</button>
+<button onclick='disconnect()'>Disconnect</button><br><br>
+<input id='msg' placeholder='Enter your query' style='width:400px'>
+<button onclick='send()'>Send</button><br><br>
+<div id='status' style='color:green'></div>
+<div id='response' style='font-family:monospace;white-space:pre-wrap;border:1px solid #ccc;padding:10px;min-height:100px'></div>
+<script>
+let ws, currentResponse = '';
+function connect() {
+  const token = document.getElementById('token').value;
+  ws = new WebSocket(`ws://localhost:8000/ws/chat?token=${token}`);
+  ws.onopen = () => setStatus('Connected ✓', 'green');
+  ws.onclose = e => setStatus(`Disconnected (${e.code})`, 'red');
+  ws.onmessage = e => {
+    const d = JSON.parse(e.data);
+    if (d.type === 'token') {
+      currentResponse += d.data.text;
+      document.getElementById('response').textContent = currentResponse;
+    } else if (d.type === 'task_completed') {
+      setStatus(`Done — ${d.data.tokens_used} tokens, ${d.data.latency_ms}ms`, 'green');
+    } else if (d.type === 'task_update') {
+      setStatus(`Status: ${d.data.status}`, 'blue');
+    }
+  };
+}
+function disconnect() { ws && ws.close(); }
+function send() {
+  currentResponse = '';
+  document.getElementById('response').textContent = '';
+  ws.send(JSON.stringify({type:'chat',query:document.getElementById('msg').value,session_id:'html-test'}));
+}
+function setStatus(msg, color) { const s=document.getElementById('status'); s.textContent=msg; s.style.color=color; }
+</script></body></html>
