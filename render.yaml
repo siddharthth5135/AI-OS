@@ -3,6 +3,7 @@ services:
     name: ai-os-api
     runtime: docker
     dockerfilePath: ./Dockerfile
+    releaseCommand: "alembic upgrade head"
     envVars:
       - key: DATABASE_URL
         sync: false  # Set manually in dashboard to Supabase cloud PostgreSQL (with asyncpg driver prefix)

@@ -38,7 +38,7 @@ In the Render dashboard, go to the environment settings for both the Web Service
 
 ### 3. Deploy and Verify
 1. Render will trigger a build of the production Docker image.
-2. Once the web service status shows **Live**, navigate to `https://your-app-url.onrender.com/health` to verify that all systems are healthy.
+2. Once the web service status shows **Live**, navigate to `https://ai-os-api.onrender.com/health` to verify that all systems are healthy.
 
 ---
 
@@ -63,7 +63,7 @@ Add the environment variables listed in the Render section to the Railway servic
 ### 1. Verify Health Endpoint
 Send a `GET` request to `/health`:
 ```bash
-curl -f https://your-deployed-api.com/health
+curl -f https://ai-os-api.onrender.com/health
 ```
 **Expected Response (200 OK):**
 ```json
@@ -82,7 +82,7 @@ curl -f https://your-deployed-api.com/health
 ### 2. Create User Session
 Send a `POST` request to `/api/v1/auth/signup`:
 ```bash
-curl -X POST https://your-deployed-api.com/api/v1/auth/signup \
+curl -X POST https://ai-os-api.onrender.com/api/v1/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"username":"prod_user","email":"user@example.com","password":"Password123"}'
 ```
@@ -102,7 +102,7 @@ curl -X POST https://your-deployed-api.com/api/v1/auth/signup \
 ### 3. Verify Agent Chat
 Send a chat prompt to the agent orchestrator:
 ```bash
-curl -X POST https://your-deployed-api.com/api/v1/agents/chat \
+curl -X POST https://ai-os-api.onrender.com/api/v1/agents/chat \
   -H "Authorization: Bearer <ACCESS_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{"message":"Hello AI OS!"}'
