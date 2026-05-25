@@ -38,66 +38,42 @@ signal.signal(signal.SIGINT, handle_shutdown_signal)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Async lifespan context manager for application startup and shutdown.
-    - Connects to Redis
-    - Logs startup summary
-    """
+    import time
     from app.core.cache.redis_client import get_redis
-    
-    # Startup Summary (Log everything except secrets)
-    logger.info("startup.summary",
-                app_name=settings.app_name,
-                version=settings.version,
-                debug=settings.debug,
-                api_prefix=settings.api_v1_prefix,
-                environment="development" if settings.debug else "production")
+    from app.vectorstore.pgvector_service import get_pgvector_service as get_pgvector
+    from app.services.embeddings.embedding_service import get_embedding_service
+    from app.services.llm.gemini_client import get_llm_client
+    from app.services.orchestration.orchestrator import AgentOrchestrator
 
-    # Connect to Redis
-    try:
-        await get_redis().connect(settings.redis_url.get_secret_value())
-        await get_redis().ping()
-        logger.info("startup.redis_connected")
-    except Exception as e:
-        logger.error("startup.redis_failed", error=str(e))
-        
-    # Connect to LLM
-    try:
-        from app.services.llm.gemini_client import get_llm_client
-        await get_llm_client().initialize()
-        healthy = await get_llm_client().health_check()
-        logger.info("llm_ready", healthy=healthy)
-    except Exception as e:
-        logger.error("llm_init_failed", error=str(e))
+    setup_logging(settings.debug)
+    logger = get_logger("startup")
+    logger.info("starting", version=settings.version, debug=settings.debug)
+    _start_time = time.time()
     
-    # Initialize Vector Storage and Embedding Services
-    try:
-        from app.vectorstore.pgvector_service import get_pgvector_service
-        from app.services.embeddings.embedding_service import get_embedding_service
-        
-        await get_embedding_service().initialize()
-        await get_pgvector_service().initialize()
-        logger.info("vector_and_embedding_services_ready")
-    except Exception as e:
-        logger.error("vector_and_embedding_services_init_failed", error=str(e))
+    for name, coro in [
+      ("redis", get_redis().connect(settings.redis_url.get_secret_value())),
+      ("pgvector", get_pgvector().initialize()),
+      ("embeddings", get_embedding_service().initialize()),
+      ("llm", get_llm_client().initialize()),
+    ]:
+      try: 
+          await coro
+          logger.info(f"{name}_ready")
+      except Exception as e:
+          logger.error(f"{name}_failed", error=str(e))
+          if name in ("redis",):  # Critical services
+              raise  # Stop startup
     
-    # Initialize Agent Orchestrator
-    try:
-        from app.services.orchestration.orchestrator import AgentOrchestrator
-        orch = AgentOrchestrator()
-        await orch.initialize()
-        app.state.orchestrator = orch
-        logger.info("orchestrator_ready")
-    except Exception as e:
-        logger.error("orchestrator_init_failed", error=str(e))
+    orch = AgentOrchestrator()
+    await orch.initialize()
+    app.state.orchestrator = orch
+    app.state.start_time = time.time()
+    logger.info("startup_complete", agents=list(orch._agents.keys()))
     
-    yield
+    yield  # App runs
     
-    # Shutdown: Cleanup resources
     await get_redis().disconnect()
-    logger.info("shutdown.redis_closed")
-    
-    logger.info("shutdown.complete")
+    logger.info("shutdown_complete")
 
 
 # Initialize FastAPI application
@@ -195,10 +171,18 @@ async def root() -> Dict[str, Any]:
 
 
 # Include API routes
-from app.api.v1.api import api_router
+from app.api.routes.auth import router as auth_router
+from app.api.routes.agents import router as agents_router
+from app.api.routes.documents import router as documents_router
+from app.api.routes.memory import router as memory_router
+from app.api.routes.llm import router as llm_router
+from app.api.routes.observability import router as obs_router
 from app.api.websocket.chat_ws import ws_router
-from app.api.routes.observability import router as observability_router
 
-app.include_router(api_router, prefix=settings.api_v1_prefix)
-app.include_router(ws_router)
-app.include_router(observability_router)
+app.include_router(auth_router, prefix=settings.api_v1_prefix)
+app.include_router(agents_router, prefix=settings.api_v1_prefix)
+app.include_router(documents_router, prefix=settings.api_v1_prefix)
+app.include_router(memory_router, prefix=settings.api_v1_prefix)
+app.include_router(llm_router, prefix=settings.api_v1_prefix)
+app.include_router(obs_router)  # /health, /metrics at root
+app.include_router(ws_router)   # /ws/chat at root

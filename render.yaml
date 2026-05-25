@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: ai-os-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        sync: false  # Set manually in dashboard to Supabase cloud PostgreSQL (with asyncpg driver prefix)
+      - key: REDIS_URL
+        fromService: {name: ai-os-redis, property: connectionString}
+      - key: SUPABASE_URL
+        value: localhost  # Note: For production use Supabase pgvector Cloud
+      - key: GEMINI_API_KEY
+        sync: false  # Set manually in dashboard
+      - key: JWT_SECRET_KEY
+        sync: false  # Set manually in dashboard (64-char hex)
+      - key: DEBUG
+        value: "False"
+      - key: CELERY_BROKER_URL
+        fromService: {name: ai-os-redis, property: connectionString}
+      - key: CELERY_RESULT_BACKEND
+        fromService: {name: ai-os-redis, property: connectionString}
+    healthCheckPath: /health
+    autoDeploy: true
+    plan: free
+  
+  - type: worker
+    name: ai-os-celery
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: "celery -A app.workers.celery_app worker --loglevel=info -Q default,embeddings,documents,cleanup"
+    envVars:
+      - key: DATABASE_URL
+        sync: false  # Set manually in dashboard to Supabase cloud PostgreSQL
+      - key: REDIS_URL
+        fromService: {name: ai-os-redis, property: connectionString}
+    plan: free
+  
+  - type: redis
+    name: ai-os-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru

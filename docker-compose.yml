@@ -1,132 +1,83 @@
+version: "3.9"
+
+x-logging: &default-logging
+  driver: json-file
+  options: {max-size: "10m", max-file: "3"}
+
+x-restart: &restart
+  restart: unless-stopped
+
 services:
-  # FastAPI Application
+  # postgres:
+  #   <<: *restart
+  #   image: # postgres removed — using Supabase cloud PostgreSQL
+  #   command: postgres -c max_connections=100 -c shared_buffers=128MB -c log_min_duration_statement=1000
+  #   environment:
+  #     POSTGRES_DB: ai_os
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD}
+  #   volumes: [postgres_data:/var/lib/postgresql/data]
+  #   healthcheck:
+  #     test: ["CMD","pg_isready","-U","postgres","-d","ai_os"]
+  #     interval: 10s; timeout: 5s; retries: 5; start_period: 30s
+  #   logging: *default-logging
+  #   deploy:
+  #     resources:
+  #       limits: {memory: 256M}
+
+  # redis:
+  #   <<: *restart
+  #   image: # redis removed — using Upstash Redis cloud
+  #   command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD:-}
+  #   volumes: [redis_data:/data]
+  #   healthcheck:
+  #     test: ["CMD","redis-cli","ping"]
+  #     interval: 10s; timeout: 3s; retries: 5
+  #   logging: *default-logging
+
+  # pgvector:
+  #   <<: *restart
+  #   image: # REMOVED - Supabase pgvector used instead
+  #   volumes: [pgvector_data:/pgvector/storage]
+  #   ports: ["6333:6333","6334:6334"]
+  #   environment:
+  #     PGVECTOR__SERVICE__GRPC_PORT: 6334
+  #   logging: *default-logging
+
   fastapi:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
+    <<: *restart
+    build: {context: ., dockerfile: Dockerfile}
+    ports: ["8000:8000"]
+    env_file: .env
     volumes:
-      - ./app:/app/app
-      - ./tests:/app/tests
-    env_file:
-      - .env
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/ai_os
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://redis:6379/2
-      - PGVECTOR_HOST=pgvector
-      - PGVECTOR_PORT=6333
-      - HF_HOME=/tmp/hf_home
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      pgvector:
-        condition: service_healthy
-    networks:
-      - ai-os-network
-    restart: unless-stopped
+      - storage_data:/home/appuser/app/storage
+    logging: *default-logging
+    deploy:
+      resources:
+        limits: {memory: 512M}
 
-  # Celery Worker
   celery:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    command: celery -A app.workers.celery_app.celery_app worker -B -s /tmp/celerybeat-schedule -Q default,embeddings,documents,cleanup --loglevel=info
+    <<: *restart
+    build: {context: ., dockerfile: Dockerfile}
+    command: celery -A app.workers.celery_app worker --loglevel=info -Q default,embeddings,documents,cleanup --concurrency=2
+    env_file: .env
     volumes:
-      - ./app:/app/app
-      - ./tests:/app/tests
-    env_file:
-      - .env
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/ai_os
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://redis:6379/2
-      - PGVECTOR_HOST=pgvector
-      - PGVECTOR_PORT=6333
-      - HF_HOME=/tmp/hf_home
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      pgvector:
-        condition: service_healthy
-    networks:
-      - ai-os-network
-    restart: unless-stopped
+      - storage_data:/home/appuser/app/storage
+    logging: *default-logging
+    deploy:
+      resources:
+        limits: {memory: 512M}
 
-  # Nginx Reverse Proxy
   nginx:
+    <<: *restart
     image: nginx:1.25-alpine
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - fastapi
-    networks:
-      - ai-os-network
-    restart: unless-stopped
-
-  # PostgreSQL
-  postgres:
-    image: pgvector/pgvector:pg16
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=ai_os
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - ai-os-network
-    restart: unless-stopped
-
-  # Redis
-  redis:
-    image: redis:7-alpine
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - redis_data:/data
-    networks:
-      - ai-os-network
-    restart: unless-stopped
-
-  # PgVector Service (Vector Database - Using Qdrant for 6333/JSON API)
-  pgvector:
-    image: qdrant/qdrant:latest
-    ports:
-      - "6333:6333"
-    healthcheck:
-      test: ["CMD", "bash", "-c", "printf '' > /dev/tcp/127.0.0.1/6333"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - qdrant_data:/qdrant/storage
-    networks:
-      - ai-os-network
-    restart: unless-stopped
-
-networks:
-  ai-os-network:
-    driver: bridge
+    ports: ["80:80"]
+    volumes: [./nginx/nginx.conf:/etc/nginx/nginx.conf:ro]
+    depends_on: [fastapi]
+    logging: *default-logging
 
 volumes:
-  postgres_data:
-  redis_data:
-  qdrant_data:
+  # postgres_data:
+  # redis_data:
+  # pgvector_data:
+  storage_data:
