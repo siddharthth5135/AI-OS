@@ -1,14 +1,16 @@
 import structlog
 from fastapi import HTTPException, status
+from jose import ExpiredSignatureError, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from jose import JWTError, ExpiredSignatureError
-
-from app.core.security.jwt import create_access_token, create_refresh_token, decode_token
-from app.core.security.password import hash_password, verify_password, get_dummy_hash
 from app.core.config.settings import settings
+from app.core.security.jwt import (create_access_token, create_refresh_token,
+                                   decode_token)
+from app.core.security.password import (get_dummy_hash, hash_password,
+                                        verify_password)
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth import SignupRequest, LoginRequest, TokenResponse, TokenRefreshRequest
+from app.schemas.auth import (LoginRequest, SignupRequest, TokenRefreshRequest,
+                              TokenResponse)
 
 logger = structlog.get_logger("ai_os.auth")
 
@@ -26,24 +28,19 @@ class AuthService:
         # Check email uniqueness
         if await UserRepository.get_by_email(db, data.email):
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Email already registered"
+                status_code=status.HTTP_409_CONFLICT, detail="Email already registered"
             )
 
         # Check username uniqueness
         if await UserRepository.get_by_username(db, data.username):
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Username already taken"
+                status_code=status.HTTP_409_CONFLICT, detail="Username already taken"
             )
 
         # Hash password and create user
         hashed_password = hash_password(data.password)
         user = await UserRepository.create(
-            db, 
-            username=data.username, 
-            email=data.email, 
-            password_hash=hashed_password
+            db, username=data.username, email=data.email, password_hash=hashed_password
         )
 
         logger.info("auth.signup_success", user_id=str(user.id), username=user.username)
@@ -55,7 +52,7 @@ class AuthService:
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
-            expires_in=settings.jwt_access_expire_minutes * 60
+            expires_in=settings.jwt_access_expire_minutes * 60,
         )
 
     @staticmethod
@@ -65,7 +62,7 @@ class AuthService:
         Implements timing-attack protection and avoids account enumeration.
         """
         user = await UserRepository.get_by_email(db, data.email)
-        
+
         # Generic error message to prevent enumeration
         unauthorized_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -84,12 +81,12 @@ class AuthService:
         if not user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="User account is deactivated"
+                detail="User account is deactivated",
             )
 
         # Update last login and generate tokens
         await UserRepository.update_last_login(db, user.id)
-        
+
         logger.info("auth.login_success", user_id=str(user.id))
 
         access_token = create_access_token(user.id, user.role)
@@ -98,7 +95,7 @@ class AuthService:
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
-            expires_in=settings.jwt_access_expire_minutes * 60
+            expires_in=settings.jwt_access_expire_minutes * 60,
         )
 
     @staticmethod
@@ -120,11 +117,10 @@ class AuthService:
                 detail="Could not validate credentials",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        
+
         if payload.get("type") != "refresh":
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token type"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type"
             )
 
         user_id = payload.get("sub")
@@ -133,16 +129,16 @@ class AuthService:
         if not user or not user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found or inactive"
+                detail="User not found or inactive",
             )
 
         # Generate new tokens (rotating the access token)
         logger.info("auth.token_refresh", user_id=str(user.id))
-        
+
         access_token = create_access_token(user.id, user.role)
-        
+
         return TokenResponse(
             access_token=access_token,
-            refresh_token=data.refresh_token, # Keep the same refresh token as requested
-            expires_in=settings.jwt_access_expire_minutes * 60
+            refresh_token=data.refresh_token,  # Keep the same refresh token as requested
+            expires_in=settings.jwt_access_expire_minutes * 60,
         )

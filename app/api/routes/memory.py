@@ -1,29 +1,47 @@
 import uuid
-from typing import Optional, List
+from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.dependencies.auth import get_current_active_user
 from app.db.database import get_db
 from app.db.models.chat import Chat
 from app.db.models.user import User
-from app.api.dependencies.auth import get_current_active_user
+from app.schemas.base import ErrorResponse
+from app.schemas.memory import (HistoryResponse, MemorySearchResponse,
+                                MemoryStoreResponse)
 from app.services.memory.memory_service import MemoryService
 
 router = APIRouter(prefix="/memory", tags=["memory"])
 
-class StoreMemoryPayload(BaseModel):
-    content: str = Field(..., description="The factual content to store in long term memory")
-    memory_type: str = Field("fact", description="The memory categorization type")
-    importance: float = Field(0.5, description="Factual importance rating from 0.0 to 1.0")
 
-@router.get("/history")
+class StoreMemoryPayload(BaseModel):
+    """Payload to save a long-term factual memory entry."""
+
+    content: str = Field(
+        ..., description="The factual content to store in long term memory"
+    )
+    memory_type: str = Field("fact", description="The memory categorization type")
+    importance: float = Field(
+        0.5, description="Factual importance rating from 0.0 to 1.0"
+    )
+
+
+@router.get(
+    "/history",
+    response_model=HistoryResponse,
+    summary="Retrieve chat logs",
+    description="Retrieve recent chat history from the database, filtered optionally by session_id.",
+    responses={401: {"description": "Not authenticated", "model": ErrorResponse}},
+)
 async def get_history(
     session_id: Optional[str] = None,
     limit: int = 20,
     current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Retrieve recent chat history from the database, filtered optionally by session_id.
@@ -32,13 +50,13 @@ async def get_history(
     if session_id:
         stmt = stmt.where(Chat.conversation_id == session_id)
     stmt = stmt.order_by(Chat.created_at.desc()).limit(limit)
-    
+
     res = await db.execute(stmt)
     chats = res.scalars().all()
-    
+
     # Return in chronological order
     ordered_chats = chats[::-1]
-    
+
     return {
         "success": True,
         "data": [
@@ -50,17 +68,29 @@ async def get_history(
                 "agent_type": chat.agent_type,
                 "tokens_used": chat.tokens_used,
                 "latency_ms": chat.latency_ms,
-                "created_at": chat.created_at.isoformat() if chat.created_at else None
-            } for chat in ordered_chats
+                "created_at": chat.created_at.isoformat() if chat.created_at else None,
+            }
+            for chat in ordered_chats
         ],
-        "message": "Chat history retrieved successfully."
+        "message": "Chat history retrieved successfully.",
     }
 
-@router.post("/store", status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/store",
+    response_model=MemoryStoreResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Store a long-term fact",
+    description="Manually generate, embed, and store a fact in long-term vector memory.",
+    responses={
+        401: {"description": "Not authenticated", "model": ErrorResponse},
+        500: {"description": "Failed to save long-term memory", "model": ErrorResponse},
+    },
+)
 async def store_memory(
     payload: StoreMemoryPayload,
     current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Manually generate, embed, and store a fact in long-term vector memory.
@@ -72,7 +102,7 @@ async def store_memory(
             content=payload.content,
             memory_type=payload.memory_type,
             db=db,
-            importance=payload.importance
+            importance=payload.importance,
         )
         return {
             "success": True,
@@ -83,21 +113,35 @@ async def store_memory(
                 "embedding_id": entry.embedding_id,
                 "memory_type": entry.memory_type,
                 "importance_score": entry.importance_score,
-                "created_at": entry.created_at.isoformat() if entry.created_at else None
+                "created_at": (
+                    entry.created_at.isoformat() if entry.created_at else None
+                ),
             },
-            "message": "Factual memory successfully generated, embedded, and stored in database + pgvector."
+            "message": "Factual memory successfully generated, embedded, and stored in database + pgvector.",
         }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save long-term memory: {str(e)}"
+            detail=f"Failed to save long-term memory: {str(e)}",
         )
 
-@router.get("/search")
+
+@router.get(
+    "/search",
+    response_model=MemorySearchResponse,
+    summary="Search semantic memory",
+    description="Perform a vector semantic search over the user's long-term memories.",
+    responses={
+        400: {"description": "Search query empty", "model": ErrorResponse},
+        401: {"description": "Not authenticated", "model": ErrorResponse},
+        500: {
+            "description": "Failed to perform semantic search",
+            "model": ErrorResponse,
+        },
+    },
+)
 async def search_memory(
-    q: str,
-    limit: int = 5,
-    current_user: User = Depends(get_current_active_user)
+    q: str, limit: int = 5, current_user: User = Depends(get_current_active_user)
 ):
     """
     Perform a vector semantic search over the user's long-term memories.
@@ -105,23 +149,21 @@ async def search_memory(
     if not q or not q.strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Search query 'q' cannot be empty."
+            detail="Search query 'q' cannot be empty.",
         )
-        
+
     memory_service = MemoryService()
     try:
         results = await memory_service.retrieve_relevant(
-            query=q,
-            user_id=str(current_user.id),
-            limit=limit
+            query=q, user_id=str(current_user.id), limit=limit
         )
         return {
             "success": True,
             "data": results,
-            "message": "Semantic memory search completed."
+            "message": "Semantic memory search completed.",
         }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Semantic memory search execution error: {str(e)}"
+            detail=f"Semantic memory search execution error: {str(e)}",
         )

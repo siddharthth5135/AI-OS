@@ -10,3 +10,4 @@ isort==5.13.2
 # Testing
 pytest==8.2.0
 pytest-asyncio==0.23.6
+aiosqlite==0.22.1

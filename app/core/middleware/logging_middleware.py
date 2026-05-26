@@ -18,7 +18,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # Assign Request ID
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
-        
+
         # Bind request context
         structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(
@@ -32,10 +32,10 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         logger.info("http_request_start")
 
         start_time = time.perf_counter()
-        
+
         try:
             response: Response = await call_next(request)
-            
+
             duration_s = time.perf_counter() - start_time
             duration_ms = duration_s * 1000
             status_code = response.status_code
@@ -56,13 +56,16 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             # Record request metrics
             try:
                 from app.core.observability.metrics import record_request
-                record_request(request.method, request.url.path, status_code, duration_s)
+
+                record_request(
+                    request.method, request.url.path, status_code, duration_s
+                )
             except Exception:
                 pass
 
             response.headers["X-Request-ID"] = request_id
             return response
-            
+
         except Exception as e:
             duration_s = time.perf_counter() - start_time
             duration_ms = duration_s * 1000
@@ -75,6 +78,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             # Record request metrics
             try:
                 from app.core.observability.metrics import record_request
+
                 record_request(request.method, request.url.path, 500, duration_s)
             except Exception:
                 pass

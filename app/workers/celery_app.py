@@ -1,4 +1,5 @@
 from celery import Celery
+
 from app.core.config.settings import settings
 
 celery_app = Celery(
@@ -8,8 +9,8 @@ celery_app = Celery(
     include=[
         "app.workers.embedding_worker",
         "app.workers.document_worker",
-        "app.workers.cleanup_worker"
-    ]
+        "app.workers.cleanup_worker",
+    ],
 )
 
 celery_app.conf.update(
@@ -31,5 +32,5 @@ celery_app.conf.update(
             "task": "app.workers.cleanup_worker.expire_old_sessions",
             "schedule": 3600.0,
         }
-    }
+    },
 )

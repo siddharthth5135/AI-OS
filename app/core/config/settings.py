@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     Application settings parsed from environment variables (.env).
     Access secrets via settings.field.get_secret_value()
     """
+
     # Application Settings
     app_name: str = Field(default="AI OS")
     debug: bool = Field(default=False)
@@ -52,9 +53,7 @@ class Settings(BaseSettings):
     cors_origins: List[str] = Field(default=["*"])
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        case_sensitive=False,
-        extra="ignore"
+        env_file=".env", case_sensitive=False, extra="ignore"
     )
 
     @property
@@ -63,13 +62,14 @@ class Settings(BaseSettings):
         url = self.database_url.get_secret_value()
         # Strip pgbouncer query parameter as it causes asyncpg TypeError
         if "?pgbouncer=" in url or "&pgbouncer=" in url:
-            from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+            from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+
             parsed = urlparse(url)
             query_params = parse_qs(parsed.query)
             query_params.pop("pgbouncer", None)
             new_query = urlencode(query_params, doseq=True)
             url = urlunparse(parsed._replace(query=new_query))
-            
+
         if url.startswith("postgresql://"):
             return url.replace("postgresql://", "postgresql+asyncpg://", 1)
         return url

@@ -1,9 +1,12 @@
-from pydantic import BaseModel
 from typing import Optional
+
+from pydantic import BaseModel
+
 
 class ChatMessage(BaseModel):
     role: str
     content: str
+
 
 class LLMResponse(BaseModel):
     text: str
@@ -13,6 +16,7 @@ class LLMResponse(BaseModel):
     latency_ms: int
     model: str
     finish_reason: str
+
 
 class LLMStreamChunk(BaseModel):
     text: str

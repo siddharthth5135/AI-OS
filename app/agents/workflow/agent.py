@@ -2,17 +2,20 @@ import json
 import time
 from typing import Any
 
-from app.agents.base_agent import BaseAgent, AgentContext, AgentResult
+from app.agents.base_agent import AgentContext, AgentResult, BaseAgent
 from app.agents.research.agent import ResearchAgent
 from app.services.llm.gemini_client import get_llm_client
 from app.services.llm.prompt_templates import WORKFLOW_SYSTEM_PROMPT
 from app.services.llm.schemas import LLMStreamChunk
 
+
 class WorkflowAgent(BaseAgent):
     agent_type = "workflow"
     system_prompt = WORKFLOW_SYSTEM_PROMPT
 
-    async def execute(self, query: str, context: AgentContext, stream: bool = False) -> Any:
+    async def execute(
+        self, query: str, context: AgentContext, stream: bool = False
+    ) -> Any:
         """
         Executes a multi-step workflow.
         1. Breaks the query into 2-4 steps as a JSON plan.
@@ -25,9 +28,9 @@ class WorkflowAgent(BaseAgent):
         llm = get_llm_client()
 
         plan_prompt = f'Break into 2-4 steps as JSON: {{"steps":[{{"step":1,"action":"research","query":"..."}}]}}\nTask: {query}'
-        
+
         plan_resp = await llm.generate(plan_prompt, system_prompt=self.system_prompt)
-        
+
         try:
             clean_text = plan_resp.text.strip()
             if clean_text.startswith("```json"):
@@ -50,12 +53,16 @@ class WorkflowAgent(BaseAgent):
         response += "\n**Executing Step 1:**\n"
 
         if stream:
+
             async def workflow_stream_generator():
                 yield LLMStreamChunk(text=response, is_final=False)
                 research_agent = ResearchAgent()
-                sub_stream = await research_agent.execute(steps[0]["query"], context, stream=True)
+                sub_stream = await research_agent.execute(
+                    steps[0]["query"], context, stream=True
+                )
                 async for chunk in sub_stream:
                     yield chunk
+
             return workflow_stream_generator()
 
         research_agent = ResearchAgent()
@@ -69,5 +76,5 @@ class WorkflowAgent(BaseAgent):
             latency_ms=elapsed_ms,
             confidence=0.9,
             sources=sub.sources,
-            metadata={"steps": len(steps)}
+            metadata={"steps": len(steps)},
         )

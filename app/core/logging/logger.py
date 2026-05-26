@@ -8,28 +8,33 @@ from structlog.stdlib import BoundLogger, ProcessorFormatter
 
 def mask_sensitive_data_processor(logger, log_method, event_dict):
     import re
+
     def mask_val(val):
         if isinstance(val, str):
             # Mask JWT tokens (starts with eyJ...)
-            val = re.compile(r'eyJ[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*').sub('[MASKED_TOKEN]', val)
+            val = re.compile(
+                r"eyJ[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*"
+            ).sub("[MASKED_TOKEN]", val)
             # Mask token query parameter in URLs
-            val = re.compile(r'token=[A-Za-z0-9-_.]+').sub('token=[MASKED]', val)
+            val = re.compile(r"token=[A-Za-z0-9-_.]+").sub("token=[MASKED]", val)
             # Mask inline passwords in strings (e.g. JSON strings or db URIs)
-            val = re.compile(r'password["\']?\s*:\s*["\']?[^"\',\s]+["\']?', re.IGNORECASE).sub('password": "[MASKED]"', val)
-            val = re.compile(r'postgres:[^@]+@').sub('postgres:[MASKED]@', val)
+            val = re.compile(
+                r'password["\']?\s*:\s*["\']?[^"\',\s]+["\']?', re.IGNORECASE
+            ).sub('password": "[MASKED]"', val)
+            val = re.compile(r"postgres:[^@]+@").sub("postgres:[MASKED]@", val)
         return val
 
     # Mask fields in event_dict
     for k, v in list(event_dict.items()):
-        if k in ['password', 'api_key', 'token', 'secret']:
-            event_dict[k] = '[MASKED]'
+        if k in ["password", "api_key", "token", "secret"]:
+            event_dict[k] = "[MASKED]"
         else:
             event_dict[k] = mask_val(v)
-            
+
     # Also mask in the main event string
     if "event" in event_dict:
         event_dict["event"] = mask_val(event_dict["event"])
-        
+
     return event_dict
 
 
@@ -37,6 +42,7 @@ def add_service_and_request_id_processor(logger, log_method, event_dict):
     event_dict["service"] = "ai-os"
     if "request_id" not in event_dict:
         import structlog
+
         ctx = structlog.contextvars.get_contextvars()
         event_dict["request_id"] = ctx.get("request_id", "unknown")
     return event_dict
@@ -74,7 +80,8 @@ def setup_logging(debug: bool = False) -> None:
 
     # Configure structlog
     structlog.configure(
-        processors=processors + [structlog.stdlib.ProcessorFormatter.wrap_for_formatter],
+        processors=processors
+        + [structlog.stdlib.ProcessorFormatter.wrap_for_formatter],
         wrapper_class=structlog.stdlib.BoundLogger,
         context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),
@@ -96,7 +103,14 @@ def setup_logging(debug: bool = False) -> None:
     root_logger.setLevel(log_level)
 
     # Configure handlers for external libraries
-    for name in ("uvicorn", "uvicorn.access", "uvicorn.error", "gunicorn", "gunicorn.access", "gunicorn.error"):
+    for name in (
+        "uvicorn",
+        "uvicorn.access",
+        "uvicorn.error",
+        "gunicorn",
+        "gunicorn.access",
+        "gunicorn.error",
+    ):
         lib_logger = logging.getLogger(name)
         lib_logger.handlers = [handler]
         lib_logger.propagate = False

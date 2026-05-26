@@ -2,9 +2,10 @@ import time
 from enum import Enum
 from typing import Any, Optional
 
-from app.agents.base_agent import BaseAgent, AgentContext, AgentResult
+from app.agents.base_agent import AgentContext, AgentResult, BaseAgent
 from app.services.llm.gemini_client import get_llm_client
 from app.services.llm.prompt_templates import CODE_SYSTEM_PROMPT
+
 
 class CodeCapability(str, Enum):
     EXPLAIN = "EXPLAIN"
@@ -13,38 +14,77 @@ class CodeCapability(str, Enum):
     REVIEW = "REVIEW"
     REFACTOR = "REFACTOR"
 
+
 class CodeAgent(BaseAgent):
     agent_type = "code"
     system_prompt = CODE_SYSTEM_PROMPT
 
-    def _detect_capability(self, query: str, code: Optional[str] = None) -> CodeCapability:
+    def _detect_capability(
+        self, query: str, code: Optional[str] = None
+    ) -> CodeCapability:
         query_lower = query.lower().strip()
-        
+
         # Edge Case: Query is just a code block with no question
-        if not query_lower or (query_lower.startswith("```") and query_lower.endswith("```")):
+        if not query_lower or (
+            query_lower.startswith("```") and query_lower.endswith("```")
+        ):
             if code or len(query_lower) > 10:
                 return CodeCapability.EXPLAIN
-        
+
         # 1. DEBUG Priority
-        debug_signals = ["debug", "error", "bug", "fix", "traceback", "exception", "crash", "incorrect"]
+        debug_signals = [
+            "debug",
+            "error",
+            "bug",
+            "fix",
+            "traceback",
+            "exception",
+            "crash",
+            "incorrect",
+        ]
         if any(sig in query_lower for sig in debug_signals):
             return CodeCapability.DEBUG
-            
+
         # 2. EXPLAIN Priority (if code is present and user asks to explain)
-        explain_signals = ["explain", "how does", "understand", "walkthrough", "analysis", "read", "meaning of"]
+        explain_signals = [
+            "explain",
+            "how does",
+            "understand",
+            "walkthrough",
+            "analysis",
+            "read",
+            "meaning of",
+        ]
         if any(sig in query_lower for sig in explain_signals) and code:
             return CodeCapability.EXPLAIN
-            
+
         # 3. REVIEW Priority
-        review_signals = ["review", "security", "audit", "practices", "optimal", "performance", "analyze", "check"]
+        review_signals = [
+            "review",
+            "security",
+            "audit",
+            "practices",
+            "optimal",
+            "performance",
+            "analyze",
+            "check",
+        ]
         if any(sig in query_lower for sig in review_signals):
             return CodeCapability.REVIEW
-            
+
         # 4. REFACTOR Priority
-        refactor_signals = ["refactor", "clean", "restructure", "rewrite", "simplify", "optimize", "improve"]
+        refactor_signals = [
+            "refactor",
+            "clean",
+            "restructure",
+            "rewrite",
+            "simplify",
+            "optimize",
+            "improve",
+        ]
         if any(sig in query_lower for sig in refactor_signals):
             return CodeCapability.REFACTOR
-            
+
         # 5. GENERATE (Default/Fallback)
         return CodeCapability.GENERATE
 
@@ -58,11 +98,12 @@ class CodeAgent(BaseAgent):
             "go": ["go lang", "golang", "go.mod"],
             "cpp": ["c++", "cpp", "clang"],
             "sql": ["sql", "postgres", "mysql", "sqlite", "query", "select"],
-            "bash": ["bash", "sh", "shell", "powershell", "ps1"]
+            "bash": ["bash", "sh", "shell", "powershell", "ps1"],
         }
-        
+
         search_target = (query + " " + (code or "")).lower()
         import re
+
         for lang, signals in lang_signals.items():
             for sig in signals:
                 if any(c in sig for c in "+.*"):
@@ -86,27 +127,27 @@ class CodeAgent(BaseAgent):
         )
 
     async def execute(
-        self, 
-        query: str, 
-        context: AgentContext, 
-        stream: bool = False, 
-        code: Optional[str] = None, 
+        self,
+        query: str,
+        context: AgentContext,
+        stream: bool = False,
+        code: Optional[str] = None,
         language: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> Any:
         llm = get_llm_client()
-        
+
         capability = self._detect_capability(query, code)
         lang = language or self._detect_language(query, code)
-        
+
         instructions = {
             CodeCapability.EXPLAIN: "Explain the code line by line.",
             CodeCapability.DEBUG: "Find all bugs and provide a robust fix.",
             CodeCapability.GENERATE: "Generate complete, production-ready working code.",
             CodeCapability.REVIEW: "Check code for security, bugs, performance, and best practices.",
-            CodeCapability.REFACTOR: "Refactor the code for maximum clarity and efficiency, and explain the changes."
+            CodeCapability.REFACTOR: "Refactor the code for maximum clarity and efficiency, and explain the changes.",
         }
-        
+
         instruction_str = instructions[capability]
         if lang:
             instruction_str += (
@@ -115,38 +156,35 @@ class CodeAgent(BaseAgent):
             )
         else:
             instruction_str += " Format all code block responses strictly using triple-backtick tags matching the appropriate programming language."
-            
+
         context_str = self._build_context_section(context)
-        
+
         prompt_parts = []
         if context_str:
             prompt_parts.append(context_str)
-            
+
         prompt_parts.append(f"INSTRUCTION: {instruction_str}")
         prompt_parts.append(f"USER QUERY: {query}")
-        
+
         if code:
             sanitized_code = self._sanitize_user_code(code)
             prompt_parts.append(f"CODE ATTACHMENT:\n{sanitized_code}")
-            
+
         prompt = "\n\n".join(prompt_parts)
         prompt = self._check_context_length(prompt)
-        
+
         if stream:
             return llm.generate_stream(prompt, system_prompt=self.system_prompt)
-            
+
         start_time = time.time()
         response = await llm.generate(prompt, system_prompt=self.system_prompt)
         elapsed = int((time.time() - start_time) * 1000)
-        
+
         return AgentResult(
             response=response.text,
             agent_type=self.agent_type,
             tokens_used=response.total_tokens or 0,
             latency_ms=elapsed,
             confidence=0.98,
-            metadata={
-                "capability": capability.value,
-                "language": lang
-            }
+            metadata={"capability": capability.value, "language": lang},
         )

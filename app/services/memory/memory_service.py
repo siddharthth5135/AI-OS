@@ -1,20 +1,24 @@
-import uuid
 import datetime
+import uuid
 from typing import List, Optional
 
 from sqlalchemy import select
+
 from app.core.cache.redis_client import get_redis
 from app.db.models.memory_entry import MemoryEntry
-from app.services.embeddings.embedding_service import get_embedding_service
-from app.vectorstore.pgvector_service import get_pgvector_service, PointStruct
 from app.db.session.database import AsyncSessionLocal
+from app.services.embeddings.embedding_service import get_embedding_service
+from app.vectorstore.pgvector_service import PointStruct, get_pgvector_service
+
 
 class MemoryService:
     SHORT_TTL = 3600
     MAX_MSGS = 20
     IMPORTANCE_THRESHOLD = 0.6
 
-    async def store_short_term(self, user_id: str, session_id: str, messages: List[dict], ttl: int = 3600):
+    async def store_short_term(
+        self, user_id: str, session_id: str, messages: List[dict], ttl: int = 3600
+    ):
         """
         Store a list of messages in Redis for a specific user and session.
         """
@@ -37,7 +41,7 @@ class MemoryService:
         """
         messages = await self.get_short_term(user_id, session_id)
         messages.append(message)
-        messages = messages[-self.MAX_MSGS:]
+        messages = messages[-self.MAX_MSGS :]
         await self.store_short_term(user_id, session_id, messages, ttl=self.SHORT_TTL)
 
     async def clear_session(self, user_id: str, session_id: str):
@@ -55,7 +59,7 @@ class MemoryService:
         memory_type: str,
         db,
         summary: Optional[str] = None,
-        importance: float = 0.5
+        importance: float = 0.5,
     ) -> MemoryEntry:
         """
         Store a memory in PostgreSQL DB + pgvector user_memory collection.
@@ -73,8 +77,10 @@ class MemoryService:
         point_id = str(uuid.uuid4())
 
         # 3. Create MemoryEntry in DB (flush, refresh)
-        db_user_id = uuid.UUID(str(user_id)) if not isinstance(user_id, uuid.UUID) else user_id
-        
+        db_user_id = (
+            uuid.UUID(str(user_id)) if not isinstance(user_id, uuid.UUID) else user_id
+        )
+
         # Calculate dynamic importance if base default or keep passed one
         importance_score = importance
         if importance == 0.5:
@@ -87,7 +93,7 @@ class MemoryService:
             embedding_id="",  # Will be updated in step 5
             memory_type=memory_type,
             importance_score=importance_score,
-            access_count=0
+            access_count=0,
         )
         db.add(entry)
         await db.flush()
@@ -103,10 +109,10 @@ class MemoryService:
                 "content": content,
                 "summary": summary,
                 "memory_type": memory_type,
-                "importance_score": importance_score
-            }
+                "importance_score": importance_score,
+            },
         )
-        
+
         try:
             await vector_service.upsert_points("user_memory", [point])
 
@@ -117,6 +123,7 @@ class MemoryService:
 
             try:
                 from app.core.observability.metrics import MEMORIES_STORED
+
                 MEMORIES_STORED.inc()
             except Exception:
                 pass
@@ -126,7 +133,9 @@ class MemoryService:
             await db.rollback()
             raise e
 
-    async def retrieve_relevant(self, query: str, user_id: str, limit: int = 5, min_score: float = 0.35) -> List[dict]:
+    async def retrieve_relevant(
+        self, query: str, user_id: str, limit: int = 5, min_score: float = 0.35
+    ) -> List[dict]:
         """
         Semantic search long-term memory for relevant memories matching the query.
         """
@@ -139,7 +148,7 @@ class MemoryService:
             vector=query_vector,
             limit=limit,
             filter={"user_id": str(user_id)},
-            score_threshold=min_score
+            score_threshold=min_score,
         )
 
         results = []
@@ -149,26 +158,34 @@ class MemoryService:
                 async with session.begin():
                     for m in matches:
                         emb_id = m["id"]
-                        stmt = select(MemoryEntry).where(MemoryEntry.embedding_id == emb_id)
+                        stmt = select(MemoryEntry).where(
+                            MemoryEntry.embedding_id == emb_id
+                        )
                         res = await session.execute(stmt)
                         entry = res.scalar_one_or_none()
                         if entry:
                             entry.access_count += 1
-                            entry.last_accessed_at = datetime.datetime.now(datetime.timezone.utc)
+                            entry.last_accessed_at = datetime.datetime.now(
+                                datetime.timezone.utc
+                            )
                     await session.commit()
 
             for m in matches:
                 payload = m["payload"]
-                results.append({
-                    "content": payload.get("content"),
-                    "summary": payload.get("summary"),
-                    "memory_type": payload.get("memory_type"),
-                    "score": m.get("score"),
-                    "importance_score": payload.get("importance_score")
-                })
+                results.append(
+                    {
+                        "content": payload.get("content"),
+                        "summary": payload.get("summary"),
+                        "memory_type": payload.get("memory_type"),
+                        "score": m.get("score"),
+                        "importance_score": payload.get("importance_score"),
+                    }
+                )
         return results
 
-    async def get_session_context(self, user_id: str, session_id: str, query: str, limit: int = 5) -> List[dict]:
+    async def get_session_context(
+        self, user_id: str, session_id: str, query: str, limit: int = 5
+    ) -> List[dict]:
         """
         Merge short-term (last 10) + long-term (top 3) -> return top limit
         """
@@ -180,13 +197,15 @@ class MemoryService:
         for msg in short_term_slice:
             content = msg.get("content") or ""
             role = msg.get("role") or ""
-            short_term_mems.append({
-                "content": f"{role}: {content}" if role else content,
-                "summary": None,
-                "memory_type": "short_term",
-                "score": 1.0,
-                "importance_score": 0.5
-            })
+            short_term_mems.append(
+                {
+                    "content": f"{role}: {content}" if role else content,
+                    "summary": None,
+                    "memory_type": "short_term",
+                    "score": 1.0,
+                    "importance_score": 0.5,
+                }
+            )
 
         # Fetch top 3 relevant memories from long-term memory
         long_term_mems = await self.retrieve_relevant(query, user_id, limit=3)
@@ -209,12 +228,29 @@ class MemoryService:
         if any(c.isdigit() for c in content):
             score += 0.1
 
-        important_words = ["remember", "always", "never", "prefer", "favorite", "must", "important", "key", "crucial", "essential", "identity", "name", "bio", "profile"]
+        important_words = [
+            "remember",
+            "always",
+            "never",
+            "prefer",
+            "favorite",
+            "must",
+            "important",
+            "key",
+            "crucial",
+            "essential",
+            "identity",
+            "name",
+            "bio",
+            "profile",
+        ]
         content_lower = content.lower()
         if any(word in content_lower for word in important_words):
             score += 0.25
 
-        if "?" in content or content_lower.strip().startswith(("what", "how", "why", "who", "where", "when", "can you", "could you")):
+        if "?" in content or content_lower.strip().startswith(
+            ("what", "how", "why", "who", "where", "when", "can you", "could you")
+        ):
             score -= 0.1
 
         return max(0.1, min(1.0, score))
@@ -236,7 +272,7 @@ class MemoryService:
                         content=content,
                         memory_type="assistant_response",
                         db=db,
-                        importance=importance
+                        importance=importance,
                     )
                     stored_count += 1
         await self.clear_session(user_id, session_id)

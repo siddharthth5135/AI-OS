@@ -1,12 +1,16 @@
 import asyncio
-from app.workers.celery_app import celery_app
-from app.db.session.database import AsyncSessionLocal
-from app.db.models.user_session import UserSession
-from sqlalchemy import update
 from datetime import datetime, timezone
+
+from sqlalchemy import update
+
+from app.db.models.user_session import UserSession
+from app.db.session.database import AsyncSessionLocal
+from app.workers.celery_app import celery_app
+
 
 async def _async_expire_old_sessions():
     from app.db.session.database import engine
+
     try:
         async with AsyncSessionLocal() as db:
             now = datetime.now(timezone.utc)
@@ -20,6 +24,7 @@ async def _async_expire_old_sessions():
             await db.commit()
     finally:
         await engine.dispose()
+
 
 @celery_app.task
 def expire_old_sessions():

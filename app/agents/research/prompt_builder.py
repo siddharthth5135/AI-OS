@@ -1,11 +1,12 @@
 from typing import List, Optional
 
+
 def build_research_prompt(
-    query: str, 
-    memories: List[dict], 
-    doc_chunks: List[dict], 
-    chat_history: List[dict], 
-    max_tokens: int = 4000
+    query: str,
+    memories: List[dict],
+    doc_chunks: List[dict],
+    chat_history: List[dict],
+    max_tokens: int = 4000,
 ) -> str:
     """
     Builds a structured prompt within a strict token budget.
@@ -14,22 +15,22 @@ def build_research_prompt(
     2. memories (20%)
     3. chat_history (15%)
     4. query (5%)
-    
+
     Leftover characters are not rolled over but standard limits are enforced.
     Approximation: 1 token ≈ 4 characters.
     """
     total_chars_budget = max_tokens * 4
-    
+
     docs_budget = int(total_chars_budget * 0.60)
     memories_budget = int(total_chars_budget * 0.20)
     history_budget = int(total_chars_budget * 0.15)
     query_budget = int(total_chars_budget * 0.05)
-    
+
     # Process Query
     query_str = query or ""
     if len(query_str) > query_budget:
         query_str = query_str[:query_budget] + "\n[QUERY TRUNCATED due to budget limit]"
-        
+
     # Process Docs
     docs_str = ""
     if doc_chunks:
@@ -40,12 +41,15 @@ def build_research_prompt(
             else:
                 text = str(chunk)
             doc_texts.append(text)
-        
+
         full_docs = "\n\n".join(doc_texts)
         if len(full_docs) > docs_budget:
-            full_docs = full_docs[:docs_budget] + "\n[DOCUMENT CONTEXT TRUNCATED due to budget limit]"
+            full_docs = (
+                full_docs[:docs_budget]
+                + "\n[DOCUMENT CONTEXT TRUNCATED due to budget limit]"
+            )
         docs_str = f"DOCUMENT CONTEXT:\n{full_docs}"
-        
+
     # Process Memories
     mems_str = ""
     if memories:
@@ -56,12 +60,15 @@ def build_research_prompt(
             else:
                 text = str(mem)
             mem_texts.append(text)
-        
+
         full_mems = "\n\n".join(mem_texts)
         if len(full_mems) > memories_budget:
-            full_mems = full_mems[:memories_budget] + "\n[MEMORIES TRUNCATED due to budget limit]"
+            full_mems = (
+                full_mems[:memories_budget]
+                + "\n[MEMORIES TRUNCATED due to budget limit]"
+            )
         mems_str = f"RELEVANT MEMORIES:\n{full_mems}"
-        
+
     # Process Chat History
     history_str = ""
     if chat_history:
@@ -73,13 +80,15 @@ def build_research_prompt(
                 history_lines.append(f"{role.upper()}: {content}")
             else:
                 history_lines.append(str(msg))
-        
+
         full_history = "\n".join(history_lines)
         if len(full_history) > history_budget:
-            full_history = full_history[-history_budget:]  # keep most recent lines within budget
+            full_history = full_history[
+                -history_budget:
+            ]  # keep most recent lines within budget
             full_history = "[CHAT HISTORY TRUNCATED...]\n" + full_history
         history_str = f"CHAT HISTORY:\n{full_history}"
-        
+
     # Combine sections with clear separation
     sections = []
     if docs_str:
@@ -90,5 +99,5 @@ def build_research_prompt(
         sections.append(history_str)
     if query_str:
         sections.append(f"QUERY:\n{query_str}")
-        
+
     return "\n\n---\n\n".join(sections)

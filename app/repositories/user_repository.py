@@ -32,13 +32,11 @@ class UserRepository:
         return result.scalar_one_or_none()
 
     @staticmethod
-    async def create(db: AsyncSession, username: str, email: str, password_hash: str) -> User:
+    async def create(
+        db: AsyncSession, username: str, email: str, password_hash: str
+    ) -> User:
         """Create a new user record."""
-        user = User(
-            username=username,
-            email=email,
-            password_hash=password_hash
-        )
+        user = User(username=username, email=email, password_hash=password_hash)
         db.add(user)
         await db.flush()  # Flush to get the ID without committing yet
         await db.refresh(user)
@@ -56,8 +54,4 @@ class UserRepository:
     @staticmethod
     async def deactivate(db: AsyncSession, user_id: uuid.UUID) -> None:
         """Set a user's is_active status to False."""
-        await db.execute(
-            update(User)
-            .where(User.id == user_id)
-            .values(is_active=False)
-        )
+        await db.execute(update(User).where(User.id == user_id).values(is_active=False))

@@ -1,6 +1,8 @@
 import time
 from typing import Any, Optional, Tuple
+
 from app.core.cache.redis_client import get_redis
+
 
 class CacheService:
     @staticmethod
@@ -56,11 +58,13 @@ class CacheService:
         await redis.delete(key)
 
     @staticmethod
-    async def rate_limit_check(identifier: str, limit: int, window_seconds: int) -> Tuple[bool, int]:
+    async def rate_limit_check(
+        identifier: str, limit: int, window_seconds: int
+    ) -> Tuple[bool, int]:
         redis = get_redis()
         key = redis.make_key("ratelimit", identifier)
         now = time.time()
-        
+
         pipeline = redis.client.pipeline(transaction=True)
         # Add current request timestamp
         pipeline.zadd(key, {str(now): now})
@@ -70,11 +74,11 @@ class CacheService:
         pipeline.zcount(key, now - window_seconds, now)
         # Optional: update expiry of the key so it cleans up naturally
         pipeline.expire(key, window_seconds)
-        
+
         results = await pipeline.execute()
         count = results[2]  # The result of zcount
-        
+
         allowed = count <= limit
         remaining = max(0, limit - count)
-        
+
         return allowed, remaining

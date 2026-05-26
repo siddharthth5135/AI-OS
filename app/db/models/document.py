@@ -2,15 +2,18 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import ForeignKey, String, Integer, Text, DateTime
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.models.base import Base, UUIDPKMixin, TimestampMixin
+from app.db.models.base import Base, TimestampMixin, UUIDPKMixin
+
 
 class Document(UUIDPKMixin, TimestampMixin, Base):
     __tablename__ = "documents"
 
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
     filename: Mapped[str] = mapped_column(String(512), unique=True)
     original_filename: Mapped[str] = mapped_column(String(512))
     file_type: Mapped[str] = mapped_column(String(50))
@@ -20,7 +23,11 @@ class Document(UUIDPKMixin, TimestampMixin, Base):
     error_message: Mapped[Optional[str]] = mapped_column(Text)
     storage_path: Mapped[Optional[str]] = mapped_column(Text)
     pgvector_collection: Mapped[Optional[str]] = mapped_column(String(255))
-    started_processing_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
-    completed_processing_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    started_processing_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True)
+    )
+    completed_processing_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True)
+    )
 
     user = relationship("User", lazy="selectin")

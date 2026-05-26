@@ -1,16 +1,21 @@
 from typing import Dict
+
 from fastapi import WebSocket
 from starlette.websockets import WebSocketState
+
 from app.core.logging.logger import get_logger
 from app.core.observability.metrics import WS_CONNECTIONS, WS_MESSAGES
 
 logger = get_logger("ai_os.streaming.connection_manager")
 
+
 class ConnectionManager:
     def __init__(self):
         self._connections: Dict[str, WebSocket] = {}
 
-    async def connect(self, websocket: WebSocket, user_id: str, session_id: str) -> None:
+    async def connect(
+        self, websocket: WebSocket, user_id: str, session_id: str
+    ) -> None:
         self.cleanup_stale_connections()
         await websocket.accept()
         self._connections[f"{user_id}:{session_id}"] = websocket
@@ -57,5 +62,6 @@ class ConnectionManager:
                 self._connections.pop(key, None)
                 WS_CONNECTIONS.dec()
                 logger.warning("ws_stale_cleanup", connection_key=key)
+
 
 connection_manager = ConnectionManager()

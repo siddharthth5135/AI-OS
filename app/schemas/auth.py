@@ -1,13 +1,14 @@
 import re
 from datetime import datetime
-from uuid import UUID
 from typing import Optional
+from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class SignupRequest(BaseModel):
     """Schema for user registration."""
+
     username: str = Field(..., min_length=3, max_length=50, pattern=r"^[a-zA-Z0-9_]+$")
     email: EmailStr
     password: str
@@ -28,12 +29,14 @@ class SignupRequest(BaseModel):
 
 class LoginRequest(BaseModel):
     """Schema for user login."""
+
     email: EmailStr
     password: str
 
 
 class TokenResponse(BaseModel):
     """Schema for authentication tokens."""
+
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
@@ -42,11 +45,13 @@ class TokenResponse(BaseModel):
 
 class TokenRefreshRequest(BaseModel):
     """Schema for token refresh."""
+
     refresh_token: str
 
 
 class UserResponse(BaseModel):
     """Schema for public user information."""
+
     id: UUID
     username: str
     email: EmailStr

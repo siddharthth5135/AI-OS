@@ -1,8 +1,10 @@
 import re
-import fitz  # PyMuPDF
-import chardet
 from dataclasses import dataclass
 from typing import Optional
+
+import chardet
+import fitz  # PyMuPDF
+
 
 @dataclass
 class ExtractedDocument:
@@ -10,6 +12,7 @@ class ExtractedDocument:
     page_count: int
     word_count: int
     is_scanned: bool = False
+
 
 class TextExtractor:
     def _clean_text(self, text: str) -> str:
@@ -48,29 +51,31 @@ class TextExtractor:
         def _sync_extract_pdf():
             doc = fitz.open(path)
             if doc.is_encrypted:
-                raise ValueError("PDF is encrypted. Decryption or password is required to parse.")
+                raise ValueError(
+                    "PDF is encrypted. Decryption or password is required to parse."
+                )
             pages_text = []
             page_count = len(doc)
-            
+
             for page in doc:
                 text = page.get_text() or ""
                 pages_text.append(text)
-            
+
             full_text = "\n".join(pages_text)
             cleaned_text = self._clean_text(full_text)
-            
+
             # Scanned detection: if characters per page is less than 50
             total_chars = len(cleaned_text)
             avg_chars = total_chars / page_count if page_count > 0 else 0
             is_scanned = avg_chars < 50
-            
+
             word_count = len(cleaned_text.split())
-            
+
             return ExtractedDocument(
                 full_text=cleaned_text,
                 page_count=page_count,
                 word_count=word_count,
-                is_scanned=is_scanned
+                is_scanned=is_scanned,
             )
 
         return await asyncio.to_thread(_sync_extract_pdf)
@@ -85,7 +90,7 @@ class TextExtractor:
             # First read a chunk to detect encoding
             with open(path, "rb") as f:
                 raw_data = f.read(10000)
-            
+
             result = chardet.detect(raw_data)
             encoding = result.get("encoding") or "utf-8"
 
@@ -100,7 +105,7 @@ class TextExtractor:
                 full_text=cleaned_text,
                 page_count=1,
                 word_count=word_count,
-                is_scanned=False
+                is_scanned=False,
             )
 
         return await asyncio.to_thread(_sync_extract_txt)

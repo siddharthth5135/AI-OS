@@ -43,50 +43,56 @@ MEMORY_SYSTEM_PROMPT = """You are a Memory Management Agent.
 - Output a list of facts to be stored.
 """
 
-def build_context_prompt(query: str, memories: list = None, doc_chunks: list = None, chat_history: list = None) -> str:
+
+def build_context_prompt(
+    query: str,
+    memories: list = None,
+    doc_chunks: list = None,
+    chat_history: list = None,
+) -> str:
     """
     Priority: doc_chunks > memories > chat_history > query
     Token budget management: truncate lower-priority sections first if >15000 characters to stay strictly under 16000.
     """
     MAX_CHARS = 15000
-    
+
     doc_str = ""
     if doc_chunks:
         chunks_list = []
         for chunk in doc_chunks:
             if isinstance(chunk, dict):
-                text = chunk.get('text') or chunk.get('content') or str(chunk)
+                text = chunk.get("text") or chunk.get("content") or str(chunk)
             else:
                 text = str(chunk)
             chunks_list.append(text)
         doc_str = "DOCUMENT CHUNKS:\n" + "\n".join(chunks_list) + "\n\n"
-        
+
     mem_str = ""
     if memories:
         mems_list = []
         for mem in memories:
             if isinstance(mem, dict):
-                content = mem.get('content') or str(mem)
+                content = mem.get("content") or str(mem)
             else:
                 content = str(mem)
             mems_list.append(content)
         mem_str = "RELEVANT MEMORIES:\n" + "\n".join(mems_list) + "\n\n"
-        
+
     history_str = ""
     if chat_history:
         hist_list = []
         for msg in chat_history:
             if isinstance(msg, dict):
-                content = msg.get('content') or str(msg)
+                content = msg.get("content") or str(msg)
             else:
                 content = str(msg)
             hist_list.append(content)
         history_str = "CHAT HISTORY:\n" + "\n".join(hist_list) + "\n\n"
-        
+
     query_str = f"QUERY:\n{query}"
-    
+
     total_len = len(query_str) + len(doc_str) + len(mem_str) + len(history_str)
-    
+
     if total_len > MAX_CHARS:
         # Truncate lower priority first: chat_history -> memories -> doc_chunks
         if len(query_str) + len(doc_str) + len(mem_str) > MAX_CHARS:
@@ -102,7 +108,9 @@ def build_context_prompt(query: str, memories: list = None, doc_chunks: list = N
                 allowed_mem_len = MAX_CHARS - len(query_str) - len(doc_str) - 30
                 mem_str = mem_str[:allowed_mem_len] + "\n[TRUNCATED...]\n\n"
         else:
-            allowed_hist_len = MAX_CHARS - len(query_str) - len(doc_str) - len(mem_str) - 30
+            allowed_hist_len = (
+                MAX_CHARS - len(query_str) - len(doc_str) - len(mem_str) - 30
+            )
             history_str = history_str[:allowed_hist_len] + "\n[TRUNCATED...]\n\n"
-            
+
     return f"{doc_str}{mem_str}{history_str}{query_str}"

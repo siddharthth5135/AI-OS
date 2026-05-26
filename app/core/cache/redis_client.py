@@ -1,6 +1,8 @@
 import json
+from typing import Any, Optional
+
 import redis.asyncio as aioredis
-from typing import Optional, Any
+
 
 class RedisClient:
     def __init__(self):
@@ -8,9 +10,7 @@ class RedisClient:
 
     async def connect(self, url: str, max_connections: int = 20):
         pool = aioredis.ConnectionPool.from_url(
-            url, 
-            decode_responses=True, 
-            max_connections=max_connections
+            url, decode_responses=True, max_connections=max_connections
         )
         self.client = aioredis.Redis(connection_pool=pool)
 
@@ -74,7 +74,9 @@ class RedisClient:
         parts_str = ":".join(str(p) for p in parts)
         return f"ai_os:{namespace}:{parts_str}" if parts_str else f"ai_os:{namespace}"
 
+
 _redis_client = RedisClient()
+
 
 def get_redis() -> RedisClient:
     return _redis_client
