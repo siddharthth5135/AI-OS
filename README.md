@@ -135,8 +135,8 @@ ai-os/
 ### 1. Configure the Environment
 Ensure Python 3.12+ is installed. Clone the repository and copy the environment template:
 ```bash
-git clone https://github.com/yourusername/ai-os.git
-cd ai-os
+git clone https://github.com/siddharthth5135/AI-OS.git
+cd AI-OS
 cp .env.example .env
 ```
 Edit `.env` and fill in the required keys, especially `GEMINI_API_KEY`, `DATABASE_URL`, and `REDIS_URL`.
