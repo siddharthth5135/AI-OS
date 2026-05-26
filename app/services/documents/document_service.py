@@ -92,8 +92,9 @@ class DocumentService:
                 from app.core.observability.metrics import DOCS_PROCESSED
 
                 DOCS_PROCESSED.labels(file_type=doc.file_type, status="indexed").inc()
-            except Exception:
-                pass
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
         except Exception as e:
             # Revert status on failure
@@ -105,8 +106,9 @@ class DocumentService:
                 from app.core.observability.metrics import DOCS_PROCESSED
 
                 DOCS_PROCESSED.labels(file_type=doc.file_type, status="failed").inc()
-            except Exception:
-                pass
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
             raise e
 

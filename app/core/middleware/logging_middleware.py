@@ -60,8 +60,9 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 record_request(
                     request.method, request.url.path, status_code, duration_s
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
             response.headers["X-Request-ID"] = request_id
             return response
@@ -80,8 +81,9 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 from app.core.observability.metrics import record_request
 
                 record_request(request.method, request.url.path, 500, duration_s)
-            except Exception:
-                pass
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
             raise
         finally:
             structlog.contextvars.clear_contextvars()

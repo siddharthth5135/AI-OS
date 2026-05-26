@@ -170,5 +170,6 @@ async def handle_chat_ws(
                 }
             )
             WS_MESSAGES.labels(direction="sent").inc()
-        except Exception:
-            pass
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")

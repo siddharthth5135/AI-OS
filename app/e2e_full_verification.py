@@ -1,3 +1,6 @@
+from app.core.logging.logger import get_logger
+
+logger = get_logger(__name__)
 import asyncio
 import os
 import sys
@@ -15,7 +18,7 @@ QDRANT_URL = f"http://{settings.pgvector_host}:{settings.pgvector_port}"
 
 
 def generate_pdf():
-    print("\n--- Generating E2E Test PDF file ---")
+    logger.info("\n--- Generating E2E Test PDF file ---")
     doc = fitz.open()
     page = doc.new_page()
 
@@ -32,7 +35,7 @@ def generate_pdf():
     os.makedirs("/tmp", exist_ok=True)
     doc.save(pdf_path)
     doc.close()
-    print(f"Generated test PDF successfully at: {pdf_path}")
+    logger.info(f"Generated test PDF successfully at: {pdf_path}")
     return pdf_path
 
 
@@ -43,7 +46,7 @@ async def run_e2e():
         # ==========================================
         # STEP 1: SIGNUP & AUTHENTICATION
         # ==========================================
-        print("\n--- Step 1: User Signup & Authentication ---")
+        logger.info("\n--- Step 1: User Signup & Authentication ---")
         username = f"e2e_user_{uuid.uuid4().hex[:6]}"
         email = f"{username}@example.com"
         password = "Password123!"
@@ -59,12 +62,12 @@ async def run_e2e():
         me_res = await client.get(f"{BASE_URL}/auth/me", headers=headers)
         assert me_res.status_code == 200, f"Retrieving /auth/me failed: {me_res.text}"
         user_id = me_res.json()["data"]["id"]
-        print(f"  ✓ Signup successful! User: {username}, ID: {user_id}")
+        logger.info(f"  ✓ Signup successful! User: {username}, ID: {user_id}")
 
         # ==========================================
         # STEP 2: MULTI-TURN DIALOGUE (NAME CHECK)
         # ==========================================
-        print("\n--- Step 2: Multi-turn Chat Context (Name Check) ---")
+        logger.info("\n--- Step 2: Multi-turn Chat Context (Name Check) ---")
         session_id = "mem-001"
 
         # Turn 1: State name
@@ -78,7 +81,7 @@ async def run_e2e():
             },
         )
         assert res1.status_code == 200, f"Chat Turn 1 failed: {res1.text}"
-        print(f"  Turn 1 Response: {res1.json()['data']['response']}")
+        logger.info(f"  Turn 1 Response: {res1.json()['data']['response']}")
 
         # Turn 2: Query name
         res2 = await client.post(
@@ -92,16 +95,16 @@ async def run_e2e():
         )
         assert res2.status_code == 200, f"Chat Turn 2 failed: {res2.text}"
         resp_text = res2.json()["data"]["response"]
-        print(f"  Turn 2 Response: {resp_text}")
+        logger.info(f"  Turn 2 Response: {resp_text}")
         assert (
             "Alex" in resp_text
         ), f"Agent failed to recall user name! Response: {resp_text}"
-        print("  ✓ Multi-turn name check successful!")
+        logger.info("  ✓ Multi-turn name check successful!")
 
         # ==========================================
         # STEP 3: REDIS CONTENT VERIFICATION
         # ==========================================
-        print("\n--- Step 3: Checking Redis short-term cache ---")
+        logger.info("\n--- Step 3: Checking Redis short-term cache ---")
         redis = get_redis()
         # Initialize client if needed
         if not redis.client:
@@ -109,20 +112,22 @@ async def run_e2e():
 
         key = redis.make_key("memory:short", user_id, session_id)
         redis_messages = await redis.get_json(key)
-        print(f"  Redis Key: {key}")
-        print(f"  Redis Messages Count: {len(redis_messages) if redis_messages else 0}")
+        logger.info(f"  Redis Key: {key}")
+        logger.info(
+            f"  Redis Messages Count: {len(redis_messages) if redis_messages else 0}"
+        )
         assert redis_messages is not None, "Redis key does not exist!"
         # Since 2 turns were run, each turn appends user + assistant message.
         # Total messages = 4. We verify that count >= 2.
         assert (
             len(redis_messages) >= 2
         ), f"Redis array should contain at least 2 messages, found: {len(redis_messages)}"
-        print("  ✓ Redis content verified successfully!")
+        logger.info("  ✓ Redis content verified successfully!")
 
         # ==========================================
         # STEP 4: MANUAL FACT STORE
         # ==========================================
-        print("\n--- Step 4: Storing Manual Fact ---")
+        logger.info("\n--- Step 4: Storing Manual Fact ---")
         store_payload = {
             "content": "User prefers Python",
             "memory_type": "fact",
@@ -140,26 +145,26 @@ async def run_e2e():
         # ==========================================
         # STEP 5: SEMANTIC VECTOR SEARCH
         # ==========================================
-        print("\n--- Step 5: Semantic Search across User Memory ---")
+        logger.info("\n--- Step 5: Semantic Search across User Memory ---")
         res_search = await client.get(
             f"{BASE_URL}/memory/search?q=programming+preferences", headers=headers
         )
         assert res_search.status_code == 200, f"Search failed: {res_search.text}"
         search_data = res_search.json()["data"]
-        print(f"  Search Results:")
+        logger.info(f"  Search Results:")
         for idx, item in enumerate(search_data):
             print(
                 f"    [{idx + 1}] Score: {item['score']:.4f} | Type: {item['memory_type']}"
             )
-            print(f"        Content: {item['content']}")
+            logger.info(f"        Content: {item['content']}")
         assert len(search_data) > 0, "No semantic matches found!"
         assert search_data[0]["score"] > 0.35, "Similarity score was too low!"
-        print("  ✓ Semantic memory search successful!")
+        logger.info("  ✓ Semantic memory search successful!")
 
         # ==========================================
         # STEP 6: CONTEXTUAL CODE GENERATION
         # ==========================================
-        print("\n--- Step 6: Contextual Code Gen from Preference ---")
+        logger.info("\n--- Step 6: Contextual Code Gen from Preference ---")
         # Ensure we pass the factual preference context using the same session
         res_code = await client.post(
             f"{BASE_URL}/agents/chat",
@@ -172,16 +177,16 @@ async def run_e2e():
         )
         assert res_code.status_code == 200, f"Code chat failed: {res_code.text}"
         code_resp = res_code.json()["data"]["response"]
-        print(f"  Agent Code Response:\n{code_resp}")
+        logger.info(f"  Agent Code Response:\n{code_resp}")
         assert (
             "python" in code_resp.lower()
         ), "Should use Python according to stored preferences!"
-        print("  ✓ Contextual code generation from memory successful!")
+        logger.info("  ✓ Contextual code generation from memory successful!")
 
         # ==========================================
         # STEP 7: VECTOR COLLECTION POINTS CHECK
         # ==========================================
-        print("\n--- Step 7: Verifying Supabase pgvector Points ---")
+        logger.info("\n--- Step 7: Verifying Supabase pgvector Points ---")
         qdrant_user_res = await client.post(
             f"{QDRANT_URL}/collections/user_memory/points/count", json={"exact": True}
         )
@@ -189,17 +194,19 @@ async def run_e2e():
             qdrant_user_res.status_code == 200
         ), f"Qdrant count failed: {qdrant_user_res.text}"
         user_points_count = qdrant_user_res.json()["result"]["count"]
-        print(f"  Qdrant user_memory point count: {user_points_count} (Expected: > 0)")
+        logger.info(
+            f"  Qdrant user_memory point count: {user_points_count} (Expected: > 0)"
+        )
         assert user_points_count > 0, "Collection user_memory is empty!"
-        print("  ✓ Vector points verification successful!")
+        logger.info("  ✓ Vector points verification successful!")
 
         # ==========================================
         # STEP 8: ROUTING AGENT TESTS
         # ==========================================
-        print("\n--- Step 8: Multi-Agent Dynamic Routing Checks ---")
+        logger.info("\n--- Step 8: Multi-Agent Dynamic Routing Checks ---")
 
         # 8.1 Research routing
-        print("  Checking Research routing (CAP theorem?)...")
+        logger.info("  Checking Research routing (CAP theorem?)...")
         res_route = await client.post(
             f"{BASE_URL}/agents/chat",
             headers=headers,
@@ -208,10 +215,10 @@ async def run_e2e():
         assert (
             res_route.json()["data"]["agent_used"] == "research"
         ), "Should route to research!"
-        print("    ✓ Routed to research successfully!")
+        logger.info("    ✓ Routed to research successfully!")
 
         # 8.2 Code routing
-        print("  Checking Code routing (Write async file reader)...")
+        logger.info("  Checking Code routing (Write async file reader)...")
         res_route_code = await client.post(
             f"{BASE_URL}/agents/chat",
             headers=headers,
@@ -220,10 +227,10 @@ async def run_e2e():
         assert (
             res_route_code.json()["data"]["agent_used"] == "code"
         ), "Should route to code!"
-        print("    ✓ Routed to code successfully!")
+        logger.info("    ✓ Routed to code successfully!")
 
         # 8.3 Document routing & parallel retrieval verification
-        print("  Uploading PDF file for Document routing...")
+        logger.info("  Uploading PDF file for Document routing...")
         with open(pdf_path, "rb") as f:
             pdf_files = {"file": ("test.pdf", f, "application/pdf")}
             upload_res = await client.post(
@@ -233,7 +240,7 @@ async def run_e2e():
         doc_id = upload_res.json()["data"]["id"]
 
         # Wait for indexing
-        print("  Polling document status...")
+        logger.info("  Polling document status...")
         for _ in range(15):
             await asyncio.sleep(1.0)
             chk_res = await client.get(
@@ -242,7 +249,7 @@ async def run_e2e():
             if chk_res.json()["data"]["status"] == "indexed":
                 break
 
-        print("  Checking Document routing (Summarize)...")
+        logger.info("  Checking Document routing (Summarize)...")
         res_route_doc = await client.post(
             f"{BASE_URL}/agents/chat",
             headers=headers,
@@ -251,10 +258,10 @@ async def run_e2e():
         assert (
             res_route_doc.json()["data"]["agent_used"] == "document"
         ), "Should route to document!"
-        print("    ✓ Routed to document successfully!")
+        logger.info("    ✓ Routed to document successfully!")
 
         # 8.4 Memory routing
-        print("  Checking Memory routing (What do you know about my prefs?)...")
+        logger.info("  Checking Memory routing (What do you know about my prefs?)...")
         res_route_mem = await client.post(
             f"{BASE_URL}/agents/chat",
             headers=headers,
@@ -263,7 +270,7 @@ async def run_e2e():
         assert (
             res_route_mem.json()["data"]["agent_used"] == "memory"
         ), "Should route to memory!"
-        print("    ✓ Routed to memory successfully!")
+        logger.info("    ✓ Routed to memory successfully!")
 
         # 8.5 Workflow routing
         print(
@@ -282,7 +289,9 @@ async def run_e2e():
         assert (
             "**Workflow Plan:**" in work_data["response"]
         ), "Workflow response must contain plan!"
-        print("    ✓ Routed to workflow successfully and generated multi-step plan!")
+        logger.info(
+            "    ✓ Routed to workflow successfully and generated multi-step plan!"
+        )
 
         # 8.6 Parallel Retrieval (Memories AND Document chunks retrieved together)
         print(
@@ -300,14 +309,16 @@ async def run_e2e():
         assert (
             res_parallel.status_code == 200
         ), f"Parallel retrieval failed: {res_parallel.text}"
-        print("    ✓ Parallel retrieval completed with zero errors!")
+        logger.info("    ✓ Parallel retrieval completed with zero errors!")
 
         # Cleanup redis client
         await redis.disconnect()
 
-        print("\n" + "=" * 50)
-        print("ALL MASTER E2E MEMORY, ROUTING, & PARALLEL RETRIEVAL CHECKS PASSED!")
-        print("=" * 50 + "\n")
+        logger.info("\n" + "=" * 50)
+        logger.info(
+            "ALL MASTER E2E MEMORY, ROUTING, & PARALLEL RETRIEVAL CHECKS PASSED!"
+        )
+        logger.info("=" * 50 + "\n")
 
 
 if __name__ == "__main__":

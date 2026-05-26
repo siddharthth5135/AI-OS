@@ -245,8 +245,9 @@ class TaskClassifier:
                 for sec in data.get("secondary_agents", []):
                     try:
                         secondary_list.append(TaskType[sec.upper()])
-                    except KeyError:
-                        pass
+                    except KeyError as e:
+                        import logging
+                        logging.getLogger(__name__).warning(f"Ignored error in KeyError: {e}")
 
                 classification = TaskClassification(
                     primary_agent=primary_agent,

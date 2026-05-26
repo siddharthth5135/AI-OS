@@ -99,8 +99,9 @@ class AgentOrchestrator:
                 stmt = select(Task.task_type).where(Task.id == uuid.UUID(task_id))
                 res = await session.execute(stmt)
                 task_type = res.scalar_one_or_none() or "chat"
-        except Exception:
-            pass
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
         # 1. Classify
         if force_agent:
@@ -303,8 +304,9 @@ class AgentOrchestrator:
                 stmt = select(Task.task_type).where(Task.id == uuid.UUID(task_id))
                 res = await session.execute(stmt)
                 task_type = res.scalar_one_or_none() or "chat"
-        except Exception:
-            pass
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
         start_time = time.time()
         try:

@@ -287,8 +287,9 @@ async def delete_document(
     if doc.storage_path and os.path.exists(doc.storage_path):
         try:
             os.remove(doc.storage_path)
-        except OSError:
-            pass
+        except OSError as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Ignored error in OSError: {e}")
 
     # 3. Delete from DB
     await db.delete(doc)

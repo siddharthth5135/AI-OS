@@ -35,8 +35,9 @@ class PgVectorService:
             # Enable vector extension
             try:
                 await conn.execute(sa.text("CREATE EXTENSION IF NOT EXISTS vector;"))
-            except Exception:
-                pass
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
             collections = ["user_memory", "documents", "chats"]
             for col in collections:
@@ -64,8 +65,9 @@ class PgVectorService:
                     """
                         )
                     )
-                except Exception:
-                    pass
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
             # Mirror collection creation in Qdrant (for external port 6333 verification)
             qdrant_url = f"http://{settings.pgvector_host}:{settings.pgvector_port}"
@@ -81,8 +83,9 @@ class PgVectorService:
                                 json={"vectors": {"size": 384, "distance": "Cosine"}},
                                 timeout=2.0,
                             )
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        import logging
+                        logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
     async def upsert_points(self, collection: str, points: List[PointStruct]):
         """
@@ -129,8 +132,9 @@ class PgVectorService:
                         json={"points": qdrant_points},
                         timeout=5.0,
                     )
-            except Exception:
-                pass
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
     async def search(
         self,
@@ -209,8 +213,9 @@ class PgVectorService:
                     json={"filter": {"must": filter_conditions}},
                     timeout=5.0,
                 )
-        except Exception:
-            pass
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
     async def count(self, collection: str, filter: Optional[Dict] = None) -> int:
         """

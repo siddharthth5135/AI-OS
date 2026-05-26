@@ -125,8 +125,9 @@ class MemoryService:
                 from app.core.observability.metrics import MEMORIES_STORED
 
                 MEMORIES_STORED.inc()
-            except Exception:
-                pass
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
             return entry
         except Exception as e:

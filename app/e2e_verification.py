@@ -1,3 +1,6 @@
+from app.core.logging.logger import get_logger
+
+logger = get_logger(__name__)
 import asyncio
 import os
 import sys
@@ -14,7 +17,7 @@ QDRANT_URL = f"http://{settings.pgvector_host}:{settings.pgvector_port}"
 
 
 def generate_pdf():
-    print("\n--- Generating E2E Test PDF file ---")
+    logger.info("\n--- Generating E2E Test PDF file ---")
     doc = fitz.open()
     page = doc.new_page()
 
@@ -30,7 +33,7 @@ def generate_pdf():
     pdf_path = "/tmp/test.pdf"
     doc.save(pdf_path)
     doc.close()
-    print(f"Generated test PDF successfully at: {pdf_path}")
+    logger.info(f"Generated test PDF successfully at: {pdf_path}")
     return pdf_path
 
 
@@ -42,7 +45,7 @@ async def run_e2e():
         # ==========================================
         # STEP 1: SIGNUP & AUTHENTICATION
         # ==========================================
-        print("\n--- Step 1: User Signup & Authentication ---")
+        logger.info("\n--- Step 1: User Signup & Authentication ---")
         username = f"e2e_user_{uuid.uuid4().hex[:6]}"
         email = f"{username}@example.com"
         password = "Password123!"
@@ -53,17 +56,19 @@ async def run_e2e():
             res = await client.post(f"{BASE_URL}/auth/signup", json=signup_data)
             if res.status_code == 201:
                 token_data = res.json()["data"]
-                print(f"Signup successful! User: {username}")
+                logger.info(f"Signup successful! User: {username}")
             else:
-                print(f"Signup returned status {res.status_code}, trying login...")
+                logger.info(
+                    f"Signup returned status {res.status_code}, trying login..."
+                )
                 login_res = await client.post(
                     f"{BASE_URL}/auth/login",
                     json={"email": email, "password": password},
                 )
                 token_data = login_res.json()["data"]
-                print("Login successful!")
+                logger.info("Login successful!")
         except Exception as e:
-            print(f"Authentication failed: {str(e)}")
+            logger.info(f"Authentication failed: {str(e)}")
             sys.exit(1)
 
         token = token_data["access_token"]
@@ -72,7 +77,7 @@ async def run_e2e():
         # ==========================================
         # STEP 2: UPLOAD DOCUMENT
         # ==========================================
-        print("\n--- Step 2: Uploading Document ---")
+        logger.info("\n--- Step 2: Uploading Document ---")
         with open(pdf_path, "rb") as f:
             files = {"file": ("test.pdf", f, "application/pdf")}
             res = await client.post(
@@ -80,20 +85,20 @@ async def run_e2e():
             )
 
         if res.status_code != 201:
-            print(f"Upload failed: {res.status_code} - {res.text}")
+            logger.info(f"Upload failed: {res.status_code} - {res.text}")
             sys.exit(1)
 
         upload_resp = res.json()
         doc_id = upload_resp["data"]["id"]
-        print(f"Upload response (201 Created):")
-        print(f"  Document ID: {doc_id}")
-        print(f"  Filename: {upload_resp['data']['filename']}")
-        print(f"  Status: {upload_resp['data']['status']}")
+        logger.info(f"Upload response (201 Created):")
+        logger.info(f"  Document ID: {doc_id}")
+        logger.info(f"  Filename: {upload_resp['data']['filename']}")
+        logger.info(f"  Status: {upload_resp['data']['status']}")
 
         # ==========================================
         # STEP 3: POLL STATUS
         # ==========================================
-        print("\n--- Step 3: Polling Document Status ---")
+        logger.info("\n--- Step 3: Polling Document Status ---")
         status = upload_resp["data"]["status"]
         chunk_count = 0
 
@@ -101,27 +106,29 @@ async def run_e2e():
             await asyncio.sleep(3.0)
             res = await client.get(f"{BASE_URL}/documents/{doc_id}", headers=headers)
             if res.status_code != 200:
-                print(f"Failed to fetch document status: {res.status_code}")
+                logger.info(f"Failed to fetch document status: {res.status_code}")
                 sys.exit(1)
 
             doc_data = res.json()["data"]
             status = doc_data["status"]
             chunk_count = doc_data.get("chunk_count") or 0
-            print(f"  [Poll #{poll_idx}] Status: {status}, Chunks: {chunk_count}")
+            logger.info(f"  [Poll #{poll_idx}] Status: {status}, Chunks: {chunk_count}")
 
             if status in ["indexed", "failed"]:
                 break
 
         if status != "indexed":
-            print(f"Document processing failed or timed out. Final status: {status}")
+            logger.info(
+                f"Document processing failed or timed out. Final status: {status}"
+            )
             sys.exit(1)
 
-        print("Document successfully parsed and indexed! ✓")
+        logger.info("Document successfully parsed and indexed! ✓")
 
         # ==========================================
         # STEP 4: VERIFY VECTOR DATABASE POINTS
         # ==========================================
-        print("\n--- Step 4: Verifying Vector Database Point Count ---")
+        logger.info("\n--- Step 4: Verifying Vector Database Point Count ---")
         # Query the points count from Qdrant directly
         qdrant_res = await client.post(
             f"{QDRANT_URL}/collections/documents/points/count", json={"exact": True}
@@ -142,30 +149,30 @@ async def run_e2e():
         # ==========================================
         # STEP 5: SEMANTIC QUERY
         # ==========================================
-        print("\n--- Step 5: Semantic Document Search ---")
+        logger.info("\n--- Step 5: Semantic Document Search ---")
         query_payload = {"query": "CAP theorem guarantees", "doc_ids": [doc_id]}
         res = await client.post(
             f"{BASE_URL}/documents/query", headers=headers, json=query_payload
         )
         if res.status_code != 200:
-            print(f"Semantic query failed: {res.status_code} - {res.text}")
+            logger.info(f"Semantic query failed: {res.status_code} - {res.text}")
             sys.exit(1)
 
         search_results = res.json()["data"]
-        print(f"Search results:")
+        logger.info(f"Search results:")
         for idx, item in enumerate(search_results):
             print(
                 f"  [{idx + 1}] Score: {item['score']:.4f} | File: {item['filename']}"
             )
-            print(f"      Text: {item['text'][:120]}...")
+            logger.info(f"      Text: {item['text'][:120]}...")
 
         assert len(search_results) > 0, "Should return at least one semantic match!"
-        print("Semantic search completed successfully! ✓")
+        logger.info("Semantic search completed successfully! ✓")
 
         # ==========================================
         # STEP 6: CHAT WITH DOC
         # ==========================================
-        print("\n--- Step 6: Chatting with Document Agent ---")
+        logger.info("\n--- Step 6: Chatting with Document Agent ---")
         chat_payload = {
             "query": "What is the CAP theorem?",
             "doc_ids": [doc_id],
@@ -175,14 +182,14 @@ async def run_e2e():
             f"{BASE_URL}/agents/chat", headers=headers, json=chat_payload
         )
         if res.status_code != 200:
-            print(f"Chat failed: {res.status_code} - {res.text}")
+            logger.info(f"Chat failed: {res.status_code} - {res.text}")
             sys.exit(1)
 
         chat_data = res.json()["data"]
-        print(f"Chat response details:")
-        print(f"  Agent Used: {chat_data['agent_used']}")
-        print(f"  Response: {chat_data['response']}")
-        print(f"  Sources: {chat_data['sources']}")
+        logger.info(f"Chat response details:")
+        logger.info(f"  Agent Used: {chat_data['agent_used']}")
+        logger.info(f"  Response: {chat_data['response']}")
+        logger.info(f"  Sources: {chat_data['sources']}")
 
         assert (
             chat_data["agent_used"] == "document"
@@ -190,18 +197,18 @@ async def run_e2e():
         assert (
             "CAP" in chat_data["response"]
         ), "Response should discuss the CAP theorem!"
-        print("Document agent chat successfully processed! ✓")
+        logger.info("Document agent chat successfully processed! ✓")
 
         # ==========================================
         # STEP 7: DELETE DOCUMENT & VERIFY CLEANUP
         # ==========================================
-        print("\n--- Step 7: Deleting Document and Verifying Cleanup ---")
+        logger.info("\n--- Step 7: Deleting Document and Verifying Cleanup ---")
         del_res = await client.delete(f"{BASE_URL}/documents/{doc_id}", headers=headers)
         if del_res.status_code != 200:
-            print(f"Deletion failed: {del_res.status_code} - {del_res.text}")
+            logger.info(f"Deletion failed: {del_res.status_code} - {del_res.text}")
             sys.exit(1)
 
-        print("Deletion successful!")
+        logger.info("Deletion successful!")
 
         # Verify physical file deletion
         # Wait, inside container physical file path is what was created. Let's check storage path!
@@ -231,7 +238,7 @@ async def run_e2e():
         )
         assert rem_count == 0, f"Qdrant points for document {doc_id} should be deleted!"
 
-        print("\nALL E2E DOCUMENT INTELLIGENCE TESTS PASSED SUCCESSFULLY! ✓✓✓")
+        logger.info("\nALL E2E DOCUMENT INTELLIGENCE TESTS PASSED SUCCESSFULLY! ✓✓✓")
 
 
 if __name__ == "__main__":

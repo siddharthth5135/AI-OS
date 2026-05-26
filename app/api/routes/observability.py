@@ -205,8 +205,9 @@ async def admin_stats(db: AsyncSession = Depends(get_db)):
         redis_key = f"stats:tokens:today:{today_str}"
         val = await redis.get(redis_key)
         total_tokens_today = int(val) if val else 0
-    except Exception:
-        pass
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
     # 6. Total documents
     res_docs = await db.execute(select(func.count(Document.id)))

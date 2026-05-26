@@ -41,8 +41,9 @@ async def _async_process_document(document_id, file_path, user_id):
             if file_path and os.path.exists(file_path):
                 try:
                     os.remove(file_path)
-                except OSError:
-                    pass
+                except OSError as e:
+                    import logging
+                    logging.getLogger(__name__).warning(f"Ignored error in OSError: {e}")
 
 
 @celery_app.task(bind=True, max_retries=2, time_limit=600)

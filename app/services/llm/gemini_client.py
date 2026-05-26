@@ -239,8 +239,9 @@ class GeminiClient:
                 redis_key = f"stats:tokens:today:{today_str}"
                 await redis.incrby(redis_key, response_obj.total_tokens)
                 await redis.expire(redis_key, 172800)
-            except Exception:
-                pass
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
             return response_obj
 
@@ -349,8 +350,9 @@ class GeminiClient:
                 redis_key = f"stats:tokens:today:{today_str}"
                 await redis.incrby(redis_key, total_tokens)
                 await redis.expire(redis_key, 172800)
-            except Exception:
-                pass
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
         except Exception as e:
             LLM_ERRORS.labels(error_type=type(e).__name__).inc()
