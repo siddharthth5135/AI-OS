@@ -1,3 +1,5 @@
+import typing
+
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,7 +32,7 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
         422: {"description": "Validation error", "model": ErrorResponse},
     },
 )
-async def signup(data: SignupRequest, db: AsyncSession = Depends(get_db)):
+async def signup(data: SignupRequest, db: AsyncSession = Depends(get_db)) -> typing.Any:
     """
     Register a new user account.
     """
@@ -52,7 +54,7 @@ async def signup(data: SignupRequest, db: AsyncSession = Depends(get_db)):
         422: {"description": "Validation error", "model": ErrorResponse},
     },
 )
-async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
+async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)) -> typing.Any:
     """
     Authenticate and get access/refresh tokens.
     """
@@ -74,7 +76,9 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
         422: {"description": "Validation error", "model": ErrorResponse},
     },
 )
-async def refresh(data: TokenRefreshRequest, db: AsyncSession = Depends(get_db)):
+async def refresh(
+    data: TokenRefreshRequest, db: AsyncSession = Depends(get_db)
+) -> typing.Any:
     """
     Refresh the access token using a refresh token.
     """
@@ -94,7 +98,7 @@ async def refresh(data: TokenRefreshRequest, db: AsyncSession = Depends(get_db))
         }
     },
 )
-async def get_me(current_user: User = Depends(get_current_active_user)):
+async def get_me(current_user: User = Depends(get_current_active_user)) -> typing.Any:
     """
     Get current authenticated user profile.
     """
@@ -111,7 +115,7 @@ from app.api.dependencies.auth import oauth2_scheme
     description="Statelessly requests clear/invalidation of credentials on client side.",
     responses={401: {"description": "Not authenticated", "model": ErrorResponse}},
 )
-async def logout(token: str = Depends(oauth2_scheme)):
+async def logout(token: str = Depends(oauth2_scheme)) -> typing.Any:
     """
     Logout the current user. Works even if token is expired.
     """

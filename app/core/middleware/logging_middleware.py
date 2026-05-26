@@ -16,6 +16,9 @@ class LoggingMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        """
+        Automatically generated docstring.
+        """
         # Assign Request ID
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
 
@@ -62,6 +65,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 )
             except Exception as e:
                 import logging
+
                 logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
             response.headers["X-Request-ID"] = request_id
@@ -83,6 +87,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 record_request(request.method, request.url.path, 500, duration_s)
             except Exception as e:
                 import logging
+
                 logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
             raise
         finally:

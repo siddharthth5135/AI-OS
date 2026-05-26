@@ -1,4 +1,5 @@
 import asyncio
+import typing
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
@@ -21,7 +22,7 @@ async def websocket_chat(
     websocket: WebSocket,
     token: str = Query(..., description="JWT access token"),
     db: AsyncSession = Depends(get_db),
-):
+) -> typing.Any:
     """
     WebSocket endpoint for real-time bi-directional conversation streaming.
     Authenticates connection via JWT token query param, establishes heartbeat pings,
@@ -116,7 +117,7 @@ async def websocket_chat(
 
 async def handle_chat_ws(
     ws: WebSocket, user, session_id: str, query: str, doc_ids: list, db: AsyncSession
-):
+) -> typing.Any:
     """
     Handles a single incoming WebSocket chat query. Creates a task record,
     submits it to the stream processor of the agent orchestrator, and transmits
@@ -172,4 +173,5 @@ async def handle_chat_ws(
             WS_MESSAGES.labels(direction="sent").inc()
         except Exception as e:
             import logging
+
             logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")

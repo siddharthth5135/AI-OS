@@ -15,6 +15,9 @@ class ResearchAgent(BaseAgent):
     async def execute(
         self, query: str, context: AgentContext, stream: bool = False
     ) -> Any:
+        """
+        Automatically generated docstring.
+        """
         llm = get_llm_client()
         prompt = build_research_prompt(
             query=query,

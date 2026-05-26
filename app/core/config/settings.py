@@ -50,7 +50,7 @@ class Settings(BaseSettings):
 
     # Storage and CORS
     storage_path: str = Field(default="storage")
-    cors_origins: List[str] = Field(default=["*"])
+    cors_origins: str = Field(default="*")
 
     model_config = SettingsConfigDict(
         env_file=".env", case_sensitive=False, extra="ignore"
@@ -73,6 +73,13 @@ class Settings(BaseSettings):
         if url.startswith("postgresql://"):
             return url.replace("postgresql://", "postgresql+asyncpg://", 1)
         return url
+
+    @property
+    def get_cors_origins(self) -> List[str]:
+        """Get CORS origins as a list."""
+        if isinstance(self.cors_origins, str):
+            return [origin.strip() for origin in self.cors_origins.split(",")]
+        return self.cors_origins
 
 
 @lru_cache

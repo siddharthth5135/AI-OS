@@ -1,4 +1,5 @@
 import asyncio
+import typing
 from datetime import datetime, timezone
 
 from sqlalchemy import update
@@ -27,7 +28,10 @@ async def _async_expire_old_sessions():
 
 
 @celery_app.task
-def expire_old_sessions():
+def expire_old_sessions() -> typing.Any:
+    """
+    Automatically generated docstring.
+    """
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:

@@ -1,15 +1,22 @@
 import logging
 import sys
+import typing
 from typing import Any
 
 import structlog
 from structlog.stdlib import BoundLogger, ProcessorFormatter
 
 
-def mask_sensitive_data_processor(logger, log_method, event_dict):
+def mask_sensitive_data_processor(logger, log_method, event_dict) -> typing.Any:
+    """
+    Automatically generated docstring.
+    """
     import re
 
-    def mask_val(val):
+    def mask_val(val) -> typing.Any:
+        """
+        Automatically generated docstring.
+        """
         if isinstance(val, str):
             # Mask JWT tokens (starts with eyJ...)
             val = re.compile(
@@ -38,7 +45,10 @@ def mask_sensitive_data_processor(logger, log_method, event_dict):
     return event_dict
 
 
-def add_service_and_request_id_processor(logger, log_method, event_dict):
+def add_service_and_request_id_processor(logger, log_method, event_dict) -> typing.Any:
+    """
+    Automatically generated docstring.
+    """
     event_dict["service"] = "ai-os"
     if "request_id" not in event_dict:
         import structlog

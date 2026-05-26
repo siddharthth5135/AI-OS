@@ -214,7 +214,7 @@ AI OS exposes 20+ distinct REST endpoints and a WebSocket streaming channel.
 Use this JavaScript snippet to open a bi-directional streaming connection to the AI OS WebSocket server:
 
 ```javascript
-const token = "YOUR_JWT_ACCESS_TOKEN";
+const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
 const wsUrl = `ws://localhost:8000/ws/chat?token=${token}`;
 const socket = new WebSocket(wsUrl);
 

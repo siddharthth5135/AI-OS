@@ -16,6 +16,9 @@ class SignupRequest(BaseModel):
     @field_validator("password")
     @classmethod
     def validate_password_strength(cls, v: str) -> str:
+        """
+        Automatically generated docstring.
+        """
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters long")
         if not re.search(r"[A-Z]", v):

@@ -135,6 +135,9 @@ class CodeAgent(BaseAgent):
         language: Optional[str] = None,
         **kwargs,
     ) -> Any:
+        """
+        Automatically generated docstring.
+        """
         llm = get_llm_client()
 
         capability = self._detect_capability(query, code)

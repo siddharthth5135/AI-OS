@@ -1,4 +1,5 @@
 import asyncio
+import typing
 
 from app.workers.celery_app import celery_app
 
@@ -23,7 +24,12 @@ async def _async_embed(content, user_id, memory_type, summary):
 
 
 @celery_app.task(bind=True, max_retries=3, time_limit=180)
-def generate_and_store_embedding(self, content, user_id, memory_type, summary=None):
+def generate_and_store_embedding(
+    self, content, user_id, memory_type, summary=None
+) -> typing.Any:
+    """
+    Automatically generated docstring.
+    """
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:

@@ -1,3 +1,4 @@
+import typing
 from datetime import datetime, timezone
 
 from sqlalchemy import update
@@ -10,7 +11,10 @@ from app.services.llm.schemas import LLMResponse
 
 async def track_llm_usage(
     user_id: str, agent_type: str, task_id: str, response: LLMResponse
-):
+) -> typing.Any:
+    """
+    Automatically generated docstring.
+    """
     redis = get_redis()
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 

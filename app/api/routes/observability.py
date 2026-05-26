@@ -1,5 +1,6 @@
 import asyncio
 import time
+import typing
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -31,7 +32,7 @@ router = APIRouter(tags=["Observability"])
     summary="Check system health status",
     description="Validates integration connections (Postgres, Redis, PgVector, Gemini) and returns statuses. 200 for healthy, 207 for degraded (critical databases ok), and 503 for unhealthy.",
 )
-async def health_check():
+async def health_check() -> typing.Any:
     """
     Perform check on PostgreSQL, Redis, PgVector, and Gemini.
     """
@@ -137,7 +138,7 @@ logger = get_logger("ai_os.observability")
     description="Exposes application-level metrics (request latencies, errors, WebSocket states) in standard Prometheus format. Rate-limited to 10 requests per minute.",
     responses={429: {"description": "Rate limit exceeded", "model": ErrorResponse}},
 )
-async def prometheus_metrics(request: Request):
+async def prometheus_metrics(request: Request) -> typing.Any:
     """
     Retrieve application metrics in Prometheus text format.
     """
@@ -176,7 +177,7 @@ async def prometheus_metrics(request: Request):
         },
     },
 )
-async def admin_stats(db: AsyncSession = Depends(get_db)):
+async def admin_stats(db: AsyncSession = Depends(get_db)) -> typing.Any:
     """
     Aggregate statistics for administrative usage.
     """
@@ -207,6 +208,7 @@ async def admin_stats(db: AsyncSession = Depends(get_db)):
         total_tokens_today = int(val) if val else 0
     except Exception as e:
         import logging
+
         logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
     # 6. Total documents

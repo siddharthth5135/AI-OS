@@ -1,5 +1,6 @@
 import json
 import os
+import typing
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Union
 
@@ -21,13 +22,13 @@ class PgVectorService:
     def __init__(self):
         pass
 
-    async def initialize(self):
+    async def initialize(self) -> typing.Any:
         """
         Connect to database and ensure vector tables are created and indexed.
         """
         await self.ensure_collections()
 
-    async def ensure_collections(self):
+    async def ensure_collections(self) -> typing.Any:
         """
         Create vector tables and indices for user_memory, documents, and chats.
         """
@@ -37,6 +38,7 @@ class PgVectorService:
                 await conn.execute(sa.text("CREATE EXTENSION IF NOT EXISTS vector;"))
             except Exception as e:
                 import logging
+
                 logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
             collections = ["user_memory", "documents", "chats"]
@@ -67,7 +69,10 @@ class PgVectorService:
                     )
                 except Exception as e:
                     import logging
-                    logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
+
+                    logging.getLogger(__name__).warning(
+                        f"Ignored error in Exception: {e}"
+                    )
 
             # Mirror collection creation in Qdrant (for external port 6333 verification)
             qdrant_url = f"http://{settings.pgvector_host}:{settings.pgvector_port}"
@@ -85,9 +90,14 @@ class PgVectorService:
                             )
                     except Exception as e:
                         import logging
-                        logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
-    async def upsert_points(self, collection: str, points: List[PointStruct]):
+                        logging.getLogger(__name__).warning(
+                            f"Ignored error in Exception: {e}"
+                        )
+
+    async def upsert_points(
+        self, collection: str, points: List[PointStruct]
+    ) -> typing.Any:
         """
         Upsert a batch of points directly to the database table and mirror to Qdrant, chunked in batches of 100.
         """
@@ -134,6 +144,7 @@ class PgVectorService:
                     )
             except Exception as e:
                 import logging
+
                 logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
     async def search(
@@ -185,7 +196,7 @@ class PgVectorService:
                 results.append({"id": row[0], "payload": payload_val, "score": row[2]})
             return results
 
-    async def delete_by_filter(self, collection: str, filter: Dict):
+    async def delete_by_filter(self, collection: str, filter: Dict) -> typing.Any:
         """
         Delete vector points matching the payload filter keys and values from PG and Qdrant.
         """
@@ -215,6 +226,7 @@ class PgVectorService:
                 )
         except Exception as e:
             import logging
+
             logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
     async def count(self, collection: str, filter: Optional[Dict] = None) -> int:
@@ -239,4 +251,7 @@ _pgvector_service = PgVectorService()
 
 
 def get_pgvector_service() -> PgVectorService:
+    """
+    Automatically generated docstring.
+    """
     return _pgvector_service

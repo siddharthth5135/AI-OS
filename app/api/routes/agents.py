@@ -1,4 +1,5 @@
 import json
+import typing
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
@@ -50,7 +51,7 @@ async def chat(
     payload: ChatRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-):
+) -> typing.Any:
     """
     Routes query to appropriate agent via orchestrator. Supports streaming via SSE.
     """
@@ -102,7 +103,10 @@ async def chat(
         }
     else:
         # Streaming response
-        async def event_generator():
+        async def event_generator() -> typing.Any:
+            """
+            Automatically generated docstring.
+            """
             try:
                 stream_gen = orchestrator.process_stream(
                     query=payload.query,
@@ -139,7 +143,7 @@ async def get_task(
     task_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-):
+) -> typing.Any:
     """
     Retrieve specific task execution metadata by UUID.
     """
@@ -221,7 +225,7 @@ async def research(
     payload: ResearchRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-):
+) -> typing.Any:
     """
     Forces query routing to the Research Agent. Supports SSE streaming.
     """
@@ -269,7 +273,10 @@ async def research(
         }
     else:
 
-        async def event_generator():
+        async def event_generator() -> typing.Any:
+            """
+            Automatically generated docstring.
+            """
             try:
                 stream_gen = orchestrator.process_stream(
                     query=payload.query,
@@ -303,7 +310,7 @@ async def code(
     payload: CodeRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-):
+) -> typing.Any:
     """
     Forces query routing to the Code Agent. Supports SSE streaming.
     """
@@ -352,7 +359,10 @@ async def code(
         }
     else:
 
-        async def event_generator():
+        async def event_generator() -> typing.Any:
+            """
+            Automatically generated docstring.
+            """
             try:
                 stream_gen = orchestrator.process_stream(
                     query=payload.query,

@@ -1,3 +1,5 @@
+import typing
+
 from prometheus_client import (CONTENT_TYPE_LATEST, Counter, Gauge, Histogram,
                                generate_latest)
 
@@ -46,7 +48,10 @@ MEMORIES_STORED = Counter("ai_os_memories_stored_total", "Long-term memories sto
 # CRITICAL: NEVER use user_id, session_id, UUID as label — causes cardinality explosion
 
 
-def record_request(method: str, path: str, status: int, duration: float):
+def record_request(method: str, path: str, status: int, duration: float) -> typing.Any:
+    """
+    Automatically generated docstring.
+    """
     normalized = _normalize_path(path)
     HTTP_REQUESTS.labels(method=method, endpoint=normalized, status=str(status)).inc()
     HTTP_LATENCY.labels(method=method, endpoint=normalized).observe(duration)
@@ -65,4 +70,7 @@ def _normalize_path(path: str) -> str:
 
 
 def get_metrics() -> tuple[bytes, str]:
+    """
+    Automatically generated docstring.
+    """
     return generate_latest(), CONTENT_TYPE_LATEST

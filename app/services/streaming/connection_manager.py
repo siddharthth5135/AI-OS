@@ -16,6 +16,9 @@ class ConnectionManager:
     async def connect(
         self, websocket: WebSocket, user_id: str, session_id: str
     ) -> None:
+        """
+        Automatically generated docstring.
+        """
         self.cleanup_stale_connections()
         await websocket.accept()
         self._connections[f"{user_id}:{session_id}"] = websocket
@@ -23,12 +26,18 @@ class ConnectionManager:
         logger.info("ws_connected", user_id=user_id, session_id=session_id)
 
     def disconnect(self, user_id: str, session_id: str) -> None:
+        """
+        Automatically generated docstring.
+        """
         key = f"{user_id}:{session_id}"
         if key in self._connections:
             self._connections.pop(key, None)
             WS_CONNECTIONS.dec()
 
     async def send_event(self, user_id: str, session_id: str, event: dict) -> None:
+        """
+        Automatically generated docstring.
+        """
         ws = self._connections.get(f"{user_id}:{session_id}")
         if ws:
             try:
@@ -38,18 +47,30 @@ class ConnectionManager:
                 self.disconnect(user_id, session_id)
 
     async def broadcast_to_user(self, user_id: str, event: dict) -> None:
+        """
+        Automatically generated docstring.
+        """
         keys = [k for k in self._connections if k.startswith(f"{user_id}:")]
         for key in keys:
             uid, sid = key.split(":", 1)
             await self.send_event(uid, sid, event)
 
     def is_connected(self, user_id: str, session_id: str) -> bool:
+        """
+        Automatically generated docstring.
+        """
         return f"{user_id}:{session_id}" in self._connections
 
     def active_count(self) -> int:
+        """
+        Automatically generated docstring.
+        """
         return len(self._connections)
 
     def cleanup_stale_connections(self) -> None:
+        """
+        Automatically generated docstring.
+        """
         stale_keys = []
         for key, ws in list(self._connections.items()):
             if (

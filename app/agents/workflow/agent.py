@@ -1,5 +1,6 @@
 import json
 import time
+import typing
 from typing import Any
 
 from app.agents.base_agent import AgentContext, AgentResult, BaseAgent
@@ -54,7 +55,10 @@ class WorkflowAgent(BaseAgent):
 
         if stream:
 
-            async def workflow_stream_generator():
+            async def workflow_stream_generator() -> typing.Any:
+                """
+                Automatically generated docstring.
+                """
                 yield LLMStreamChunk(text=response, is_final=False)
                 research_agent = ResearchAgent()
                 sub_stream = await research_agent.execute(

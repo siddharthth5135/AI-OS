@@ -1,4 +1,5 @@
 import asyncio
+import typing
 from typing import List
 
 from sentence_transformers import SentenceTransformer
@@ -11,7 +12,7 @@ class EmbeddingService:
     def __init__(self):
         self._model = None
 
-    async def initialize(self):
+    async def initialize(self) -> typing.Any:
         """
         Load SentenceTransformer model on CPU asynchronously using a background thread.
         """
@@ -58,4 +59,7 @@ _embedding_service = EmbeddingService()
 
 
 def get_embedding_service() -> EmbeddingService:
+    """
+    Automatically generated docstring.
+    """
     return _embedding_service

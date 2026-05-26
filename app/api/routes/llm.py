@@ -1,5 +1,6 @@
 import json
 import time
+import typing
 from typing import Optional
 
 import google.api_core.exceptions
@@ -50,7 +51,7 @@ async def generate(
     request: GenerateRequest,
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_active_user),
-):
+) -> typing.Any:
     """
     Generate text using Gemini LLM. Supports streaming.
     """
@@ -80,7 +81,10 @@ async def generate(
             )
             return response
 
-        async def event_generator():
+        async def event_generator() -> typing.Any:
+            """
+            Automatically generated docstring.
+            """
             start_time = time.time()
             total_tokens = 0
             async for chunk in llm.generate_stream(

@@ -1,3 +1,5 @@
+import typing
+
 from app.core.logging.logger import get_logger
 
 logger = get_logger(__name__)
@@ -17,7 +19,10 @@ BASE_URL = "http://localhost:8000/api/v1"
 QDRANT_URL = f"http://{settings.pgvector_host}:{settings.pgvector_port}"
 
 
-def generate_pdf():
+def generate_pdf() -> typing.Any:
+    """
+    Automatically generated docstring.
+    """
     logger.info("\n--- Generating E2E Test PDF file ---")
     doc = fitz.open()
     page = doc.new_page()
@@ -39,7 +44,10 @@ def generate_pdf():
     return pdf_path
 
 
-async def run_e2e():
+async def run_e2e() -> typing.Any:
+    """
+    Automatically generated docstring.
+    """
     pdf_path = generate_pdf()
 
     async with httpx.AsyncClient(timeout=60.0) as client:

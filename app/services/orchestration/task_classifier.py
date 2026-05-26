@@ -100,6 +100,9 @@ class TaskClassifier:
     async def classify(
         self, query: str, context: Optional[dict] = None
     ) -> TaskClassification:
+        """
+        Automatically generated docstring.
+        """
         logger.info("llm.classify_task_start", query_len=len(query or ""))
 
         # If context has doc_ids, bypass heuristics and route directly to DOCUMENT
@@ -247,7 +250,10 @@ class TaskClassifier:
                         secondary_list.append(TaskType[sec.upper()])
                     except KeyError as e:
                         import logging
-                        logging.getLogger(__name__).warning(f"Ignored error in KeyError: {e}")
+
+                        logging.getLogger(__name__).warning(
+                            f"Ignored error in KeyError: {e}"
+                        )
 
                 classification = TaskClassification(
                     primary_agent=primary_agent,

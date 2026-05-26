@@ -1,3 +1,5 @@
+import typing
+
 """
 AI OS - Multi-Agent AI Operating System
 Main FastAPI application entry point
@@ -26,7 +28,7 @@ logger = get_logger("ai_os.main")
 # Global variables managed elsewhere
 
 
-def handle_shutdown_signal(signum, frame):
+def handle_shutdown_signal(signum, frame) -> typing.Any:
     """Handle SIGTERM and SIGINT for graceful shutdown."""
     logger.info("received_shutdown_signal", signum=signum)
     sys.exit(0)
@@ -38,7 +40,10 @@ signal.signal(signal.SIGINT, handle_shutdown_signal)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> typing.Any:
+    """
+    Automatically generated docstring.
+    """
     import time
 
     from app.core.cache.redis_client import get_redis
@@ -96,7 +101,7 @@ app = FastAPI(
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=settings.get_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -107,7 +112,7 @@ from fastapi.exceptions import RequestValidationError
 
 
 @app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException):
+async def http_exception_handler(request: Request, exc: HTTPException) -> typing.Any:
     """
     Global exception handler for HTTPException.
     Follows Rule 8: {"success": false, "error": "..."}
@@ -119,7 +124,9 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> typing.Any:
     """
     Global exception handler for RequestValidationError.
     Follows Rule 8 format.
@@ -141,7 +148,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 
 @app.exception_handler(Exception)
-async def generic_exception_handler(request: Request, exc: Exception):
+async def generic_exception_handler(request: Request, exc: Exception) -> typing.Any:
     """
     Global exception handler for unhandled exceptions.
     """

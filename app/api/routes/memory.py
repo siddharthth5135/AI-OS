@@ -1,3 +1,4 @@
+import typing
 import uuid
 from typing import List, Optional
 
@@ -42,7 +43,7 @@ async def get_history(
     limit: int = 20,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> typing.Any:
     """
     Retrieve recent chat history from the database, filtered optionally by session_id.
     """
@@ -91,7 +92,7 @@ async def store_memory(
     payload: StoreMemoryPayload,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> typing.Any:
     """
     Manually generate, embed, and store a fact in long-term vector memory.
     """
@@ -142,7 +143,7 @@ async def store_memory(
 )
 async def search_memory(
     q: str, limit: int = 5, current_user: User = Depends(get_current_active_user)
-):
+) -> typing.Any:
     """
     Perform a vector semantic search over the user's long-term memories.
     """

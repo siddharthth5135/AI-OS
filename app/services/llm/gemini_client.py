@@ -1,5 +1,6 @@
 import asyncio
 import time
+import typing
 from typing import AsyncGenerator, List, Optional
 
 import google.api_core.exceptions
@@ -20,7 +21,10 @@ class GeminiClient:
     def __init__(self):
         self._model = None
 
-    async def initialize(self):
+    async def initialize(self) -> typing.Any:
+        """
+        Automatically generated docstring.
+        """
         genai.configure(api_key=settings.gemini_api_key.get_secret_value())
         safety_settings = [
             {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
@@ -59,6 +63,9 @@ class GeminiClient:
     async def generate(
         self, prompt: str, system_prompt: Optional[str] = None
     ) -> LLMResponse:
+        """
+        Automatically generated docstring.
+        """
         start_time = time.time()
         try:
             import os
@@ -241,6 +248,7 @@ class GeminiClient:
                 await redis.expire(redis_key, 172800)
             except Exception as e:
                 import logging
+
                 logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
             return response_obj
@@ -252,6 +260,9 @@ class GeminiClient:
     async def generate_stream(
         self, prompt: str, system_prompt: Optional[str] = None
     ) -> AsyncGenerator[LLMStreamChunk, None]:
+        """
+        Automatically generated docstring.
+        """
         start_time = time.time()
         try:
             import os
@@ -352,6 +363,7 @@ class GeminiClient:
                 await redis.expire(redis_key, 172800)
             except Exception as e:
                 import logging
+
                 logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
         except Exception as e:
@@ -359,6 +371,9 @@ class GeminiClient:
             raise e
 
     async def generate_with_history(self, messages: List[ChatMessage]) -> LLMResponse:
+        """
+        Automatically generated docstring.
+        """
         start_time = time.time()
 
         history = []
@@ -412,6 +427,9 @@ class GeminiClient:
             )
 
     async def count_tokens(self, text: str) -> int:
+        """
+        Automatically generated docstring.
+        """
         import os
 
         if os.getenv("TESTING_MOCK_LLM") == "1":
@@ -432,6 +450,9 @@ class GeminiClient:
             )
 
     async def health_check(self) -> bool:
+        """
+        Automatically generated docstring.
+        """
         import os
 
         if os.getenv("TESTING_MOCK_LLM") == "1":
@@ -449,4 +470,7 @@ _gemini_client = GeminiClient()
 
 
 def get_llm_client() -> GeminiClient:
+    """
+    Automatically generated docstring.
+    """
     return _gemini_client

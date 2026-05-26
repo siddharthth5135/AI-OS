@@ -1,3 +1,4 @@
+import typing
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
@@ -21,7 +22,7 @@ class DocumentService:
 
     async def process_document(
         self, doc_id: uuid.UUID, file_path: str, user_id: uuid.UUID, db: AsyncSession
-    ):
+    ) -> typing.Any:
         """
         Runs the full document intelligence pipeline:
         status=processing -> text extraction -> chunking -> batch embedding -> pgvector upsert -> status=indexed.
@@ -94,6 +95,7 @@ class DocumentService:
                 DOCS_PROCESSED.labels(file_type=doc.file_type, status="indexed").inc()
             except Exception as e:
                 import logging
+
                 logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
         except Exception as e:
@@ -108,6 +110,7 @@ class DocumentService:
                 DOCS_PROCESSED.labels(file_type=doc.file_type, status="failed").inc()
             except Exception as e:
                 import logging
+
                 logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
             raise e
@@ -170,4 +173,7 @@ _document_service = DocumentService()
 
 
 def get_document_service() -> DocumentService:
+    """
+    Automatically generated docstring.
+    """
     return _document_service

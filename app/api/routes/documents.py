@@ -1,5 +1,6 @@
 import os
 import shutil
+import typing
 import uuid
 from typing import List, Optional
 
@@ -54,7 +55,7 @@ async def upload_document(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> typing.Any:
     """
     Upload document file (PDF, TXT, MD), validate sizes/magic bytes, and queue Celery processing.
     """
@@ -154,7 +155,7 @@ async def upload_document(
 async def list_documents(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> typing.Any:
     """
     List all uploaded documents belonging to the authenticated user.
     """
@@ -204,7 +205,7 @@ async def get_document(
     document_id: uuid.UUID,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> typing.Any:
     """
     Retrieve specific document metadata with ownership protection check.
     """
@@ -258,7 +259,7 @@ async def delete_document(
     document_id: uuid.UUID,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> typing.Any:
     """
     Delete document, cleaning up storage file, DB records, and vector embeddings.
     """
@@ -289,6 +290,7 @@ async def delete_document(
             os.remove(doc.storage_path)
         except OSError as e:
             import logging
+
             logging.getLogger(__name__).warning(f"Ignored error in OSError: {e}")
 
     # 3. Delete from DB
@@ -314,7 +316,7 @@ async def delete_document(
 )
 async def query_documents(
     payload: QueryPayload, current_user: User = Depends(get_current_active_user)
-):
+) -> typing.Any:
     """
     Perform vector semantic search over user documents.
     """

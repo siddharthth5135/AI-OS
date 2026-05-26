@@ -1,5 +1,6 @@
 import asyncio
 import os
+import typing
 
 from sqlalchemy import select
 
@@ -43,11 +44,17 @@ async def _async_process_document(document_id, file_path, user_id):
                     os.remove(file_path)
                 except OSError as e:
                     import logging
-                    logging.getLogger(__name__).warning(f"Ignored error in OSError: {e}")
+
+                    logging.getLogger(__name__).warning(
+                        f"Ignored error in OSError: {e}"
+                    )
 
 
 @celery_app.task(bind=True, max_retries=2, time_limit=600)
-def process_document(self, document_id, file_path, user_id):
+def process_document(self, document_id, file_path, user_id) -> typing.Any:
+    """
+    Automatically generated docstring.
+    """
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:

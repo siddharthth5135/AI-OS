@@ -1,5 +1,6 @@
 import asyncio
 import time
+import typing
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -50,7 +51,7 @@ class AgentOrchestrator:
         self._memory_service = MemoryService()
         self._doc_service = DocumentService()
 
-    async def initialize(self):
+    async def initialize(self) -> typing.Any:
         """
         Import and dynamically register ResearchAgent, CodeAgent, DocumentAgent, MemoryAgent, and WorkflowAgent.
         """
@@ -85,6 +86,9 @@ class AgentOrchestrator:
         force_agent: Optional[str] = None,
         **kwargs,
     ) -> OrchestratorResult:
+        """
+        Automatically generated docstring.
+        """
         logger.info(
             "orchestrator.process_task_start",
             task_id=task_id,
@@ -101,6 +105,7 @@ class AgentOrchestrator:
                 task_type = res.scalar_one_or_none() or "chat"
         except Exception as e:
             import logging
+
             logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
         # 1. Classify
@@ -144,7 +149,10 @@ class AgentOrchestrator:
 
         doc_ids = context.get("doc_ids") if context else None
 
-        async def noop():
+        async def noop() -> typing.Any:
+            """
+            Automatically generated docstring.
+            """
             return []
 
         try:
@@ -290,6 +298,9 @@ class AgentOrchestrator:
         force_agent: Optional[str] = None,
         **kwargs,
     ) -> AsyncGenerator[StreamEvent, None]:
+        """
+        Automatically generated docstring.
+        """
         logger.info(
             "orchestrator.process_stream_start",
             task_id=task_id,
@@ -306,6 +317,7 @@ class AgentOrchestrator:
                 task_type = res.scalar_one_or_none() or "chat"
         except Exception as e:
             import logging
+
             logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
         start_time = time.time()

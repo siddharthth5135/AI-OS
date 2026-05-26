@@ -1,4 +1,5 @@
 import time
+import typing
 from typing import Any
 
 from app.agents.base_agent import AgentContext, AgentResult, BaseAgent
@@ -22,7 +23,10 @@ class MemoryAgent(BaseAgent):
         if not context.memories:
             if stream:
 
-                async def empty_generator():
+                async def empty_generator() -> typing.Any:
+                    """
+                    Automatically generated docstring.
+                    """
                     yield LLMStreamChunk(
                         text="No relevant memories found.", is_final=False
                     )

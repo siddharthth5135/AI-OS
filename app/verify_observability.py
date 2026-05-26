@@ -1,3 +1,5 @@
+import typing
+
 from app.core.logging.logger import get_logger
 
 logger = get_logger(__name__)
@@ -12,7 +14,10 @@ from app.db.database import AsyncSessionLocal
 API_URL = "http://localhost:8000"
 
 
-async def verify():
+async def verify() -> typing.Any:
+    """
+    Automatically generated docstring.
+    """
     # Wait for the model cache to initialize
     logger.info("Waiting 5 seconds for services to fully initialize...")
     await asyncio.sleep(5)

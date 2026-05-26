@@ -1,4 +1,5 @@
 import time
+import typing
 from typing import Any, List
 
 from app.agents.base_agent import AgentContext, AgentResult, BaseAgent
@@ -13,6 +14,9 @@ class DocumentAgent(BaseAgent):
     async def execute(
         self, query: str, context: AgentContext, stream: bool = False, **kwargs
     ) -> Any:
+        """
+        Automatically generated docstring.
+        """
         llm = get_llm_client()
 
         # If no document chunks are present in context, abort immediately
@@ -22,7 +26,10 @@ class DocumentAgent(BaseAgent):
                 # Return a simple mock stream yielding the error
                 from app.services.llm.gemini_client import LLMStreamChunk
 
-                async def mock_stream():
+                async def mock_stream() -> typing.Any:
+                    """
+                    Automatically generated docstring.
+                    """
                     yield LLMStreamChunk(text=error_response, is_final=False)
                     yield LLMStreamChunk(
                         text="", is_final=True, total_tokens=0, finish_reason="stop"

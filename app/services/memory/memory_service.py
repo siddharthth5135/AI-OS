@@ -1,4 +1,5 @@
 import datetime
+import typing
 import uuid
 from typing import List, Optional
 
@@ -18,7 +19,7 @@ class MemoryService:
 
     async def store_short_term(
         self, user_id: str, session_id: str, messages: List[dict], ttl: int = 3600
-    ):
+    ) -> typing.Any:
         """
         Store a list of messages in Redis for a specific user and session.
         """
@@ -35,7 +36,9 @@ class MemoryService:
         res = await redis.get_json(key)
         return res if res is not None else []
 
-    async def append_to_session(self, user_id: str, session_id: str, message: dict):
+    async def append_to_session(
+        self, user_id: str, session_id: str, message: dict
+    ) -> typing.Any:
         """
         Append a single message to short-term session memory. Truncates to last MAX_MSGS.
         """
@@ -44,7 +47,7 @@ class MemoryService:
         messages = messages[-self.MAX_MSGS :]
         await self.store_short_term(user_id, session_id, messages, ttl=self.SHORT_TTL)
 
-    async def clear_session(self, user_id: str, session_id: str):
+    async def clear_session(self, user_id: str, session_id: str) -> typing.Any:
         """
         Clear short-term memory session.
         """
@@ -127,6 +130,7 @@ class MemoryService:
                 MEMORIES_STORED.inc()
             except Exception as e:
                 import logging
+
                 logging.getLogger(__name__).warning(f"Ignored error in Exception: {e}")
 
             return entry
