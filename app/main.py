@@ -50,8 +50,7 @@ async def lifespan(app: FastAPI) -> typing.Any:
     from app.services.embeddings.embedding_service import get_embedding_service
     from app.services.llm.gemini_client import get_llm_client
     from app.services.orchestration.orchestrator import AgentOrchestrator
-    from app.vectorstore.pgvector_service import \
-        get_pgvector_service as get_pgvector
+    from app.vectorstore.pgvector_service import get_pgvector_service as get_pgvector
 
     setup_logging(settings.debug)
     logger = get_logger("startup")
@@ -177,6 +176,7 @@ async def root() -> Dict[str, Any]:
 
 
 from app.api.routes.agents import router as agents_router
+
 # Include API routes
 from app.api.routes.auth import router as auth_router
 from app.api.routes.documents import router as documents_router

@@ -11,16 +11,17 @@ from sqlalchemy import select
 
 from app.agents.base_agent import AgentContext, AgentResult, BaseAgent
 from app.core.logging.logger import get_logger
-from app.core.observability.metrics import (LLM_TOKENS, TASK_LATENCY,
-                                            TASKS_TOTAL)
+from app.core.observability.metrics import LLM_TOKENS, TASK_LATENCY, TASKS_TOTAL
 from app.db.database import AsyncSessionLocal
 from app.db.models.chat import Chat
 from app.db.models.task import Task
 from app.services.documents.document_service import DocumentService
 from app.services.memory.memory_service import MemoryService
-from app.services.orchestration.task_classifier import (TaskClassification,
-                                                        TaskClassifier,
-                                                        TaskType)
+from app.services.orchestration.task_classifier import (
+    TaskClassification,
+    TaskClassifier,
+    TaskType,
+)
 
 logger = get_logger("ai_os.orchestration.orchestrator")
 
@@ -234,8 +235,9 @@ class AgentOrchestrator:
                     result.response
                 )
                 if importance >= self._memory_service.IMPORTANCE_THRESHOLD:
-                    from app.workers.embedding_worker import \
-                        generate_and_store_embedding
+                    from app.workers.embedding_worker import (
+                        generate_and_store_embedding,
+                    )
 
                     generate_and_store_embedding.delay(
                         content=result.response,
@@ -460,8 +462,9 @@ class AgentOrchestrator:
             try:
                 importance = await self._memory_service.score_importance(full_response)
                 if importance >= self._memory_service.IMPORTANCE_THRESHOLD:
-                    from app.workers.embedding_worker import \
-                        generate_and_store_embedding
+                    from app.workers.embedding_worker import (
+                        generate_and_store_embedding,
+                    )
 
                     generate_and_store_embedding.delay(
                         content=full_response,

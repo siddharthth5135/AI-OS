@@ -52,9 +52,6 @@ services:
     volumes:
       - storage_data:/home/appuser/app/storage
     logging: *default-logging
-    deploy:
-      resources:
-        limits: {memory: 512M}
 
   celery:
     <<: *restart
@@ -64,9 +61,6 @@ services:
     volumes:
       - storage_data:/home/appuser/app/storage
     logging: *default-logging
-    deploy:
-      resources:
-        limits: {memory: 512M}
 
   nginx:
     <<: *restart

@@ -6,8 +6,12 @@ from typing import AsyncGenerator, List, Optional
 import google.api_core.exceptions
 import google.generativeai as genai
 from google.generativeai.types import GenerationConfig
-from tenacity import (retry, retry_if_exception_type, stop_after_attempt,
-                      wait_exponential)
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from app.core.config.settings import settings
 from app.core.logging.logger import get_logger

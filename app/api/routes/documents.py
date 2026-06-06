@@ -15,10 +15,13 @@ from app.db.database import get_db
 from app.db.models.document import Document
 from app.db.models.user import User
 from app.schemas.base import ErrorResponse
-from app.schemas.documents import (DocumentDeleteResponse,
-                                   DocumentDetailResponse,
-                                   DocumentListResponse, DocumentQueryResponse,
-                                   DocumentUploadResponse)
+from app.schemas.documents import (
+    DocumentDeleteResponse,
+    DocumentDetailResponse,
+    DocumentListResponse,
+    DocumentQueryResponse,
+    DocumentUploadResponse,
+)
 from app.services.documents.document_service import get_document_service
 from app.vectorstore.pgvector_service import get_pgvector_service
 from app.workers.document_worker import process_document

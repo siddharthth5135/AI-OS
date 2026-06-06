@@ -13,11 +13,13 @@ from app.core.config.settings import settings
 from app.db.models.user import User
 from app.schemas.base import ErrorResponse
 from app.services.llm.gemini_client import get_llm_client
-from app.services.llm.prompt_templates import (CODE_SYSTEM_PROMPT,
-                                               DOCUMENT_SYSTEM_PROMPT,
-                                               MEMORY_SYSTEM_PROMPT,
-                                               RESEARCH_SYSTEM_PROMPT,
-                                               WORKFLOW_SYSTEM_PROMPT)
+from app.services.llm.prompt_templates import (
+    CODE_SYSTEM_PROMPT,
+    DOCUMENT_SYSTEM_PROMPT,
+    MEMORY_SYSTEM_PROMPT,
+    RESEARCH_SYSTEM_PROMPT,
+    WORKFLOW_SYSTEM_PROMPT,
+)
 from app.services.llm.schemas import LLMResponse
 from app.services.llm.token_tracker import track_llm_usage
 

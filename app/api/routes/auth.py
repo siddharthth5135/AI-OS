@@ -6,8 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.auth import get_current_active_user
 from app.db.models.user import User
 from app.db.session.database import get_db
-from app.schemas.auth import (LoginRequest, SignupRequest, TokenRefreshRequest,
-                              TokenResponse, UserResponse)
+from app.schemas.auth import (
+    LoginRequest,
+    SignupRequest,
+    TokenRefreshRequest,
+    TokenResponse,
+    UserResponse,
+)
 from app.schemas.base import BaseResponse, ErrorResponse
 from app.services.auth_service import AuthService
 

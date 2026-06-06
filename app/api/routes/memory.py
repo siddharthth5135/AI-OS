@@ -12,8 +12,11 @@ from app.db.database import get_db
 from app.db.models.chat import Chat
 from app.db.models.user import User
 from app.schemas.base import ErrorResponse
-from app.schemas.memory import (HistoryResponse, MemorySearchResponse,
-                                MemoryStoreResponse)
+from app.schemas.memory import (
+    HistoryResponse,
+    MemorySearchResponse,
+    MemoryStoreResponse,
+)
 from app.services.memory.memory_service import MemoryService
 
 router = APIRouter(prefix="/memory", tags=["memory"])

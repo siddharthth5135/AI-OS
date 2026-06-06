@@ -4,13 +4,19 @@ from jose import ExpiredSignatureError, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config.settings import settings
-from app.core.security.jwt import (create_access_token, create_refresh_token,
-                                   decode_token)
-from app.core.security.password import (get_dummy_hash, hash_password,
-                                        verify_password)
+from app.core.security.jwt import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+)
+from app.core.security.password import get_dummy_hash, hash_password, verify_password
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth import (LoginRequest, SignupRequest, TokenRefreshRequest,
-                              TokenResponse)
+from app.schemas.auth import (
+    LoginRequest,
+    SignupRequest,
+    TokenRefreshRequest,
+    TokenResponse,
+)
 
 logger = structlog.get_logger("ai_os.auth")
 

@@ -16,8 +16,7 @@ from app.db.models.task import Task
 from app.db.models.user import User
 from app.schemas.agents import AgentChatResponse, CodeResponse, TaskResponse
 from app.schemas.base import ErrorResponse
-from app.services.orchestration.orchestrator import (AgentOrchestrator,
-                                                     StreamEvent)
+from app.services.orchestration.orchestrator import AgentOrchestrator, StreamEvent
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
