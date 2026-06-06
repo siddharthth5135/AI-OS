@@ -13,11 +13,12 @@ from app.db.models import Base
 # access to the values within the .ini file in use.
 config = context.config
 
-# Set the SQLAlchemy URL from settings
-url = settings.database_url.get_secret_value()
+# Set the SQLAlchemy URL from DIRECT_URL (to bypass pgBouncer prepared statement issues) or settings
+url = (settings.direct_url.get_secret_value() if settings.direct_url else None) or settings.database_url.get_secret_value()
 if url.startswith("postgresql://"):
     url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
 url = url.replace("?pgbouncer=true", "").replace("&pgbouncer=true", "")
+url = url.replace("%", "%%")
 config.set_main_option("sqlalchemy.url", url)
 
 # Interpret the config file for Python logging.

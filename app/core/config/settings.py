@@ -19,6 +19,7 @@ class Settings(BaseSettings):
 
     # Database Configuration
     database_url: SecretStr
+    direct_url: SecretStr = Field(default=None)
     db_pool_size: int = Field(default=10)
     db_max_overflow: int = Field(default=5)
 
@@ -59,7 +60,7 @@ class Settings(BaseSettings):
     @property
     def async_database_url(self) -> str:
         """Get the database URL formatted for asyncpg."""
-        url = self.database_url.get_secret_value()
+        url = (self.direct_url.get_secret_value() if self.direct_url else None) or self.database_url.get_secret_value()
         # Strip pgbouncer query parameter as it causes asyncpg TypeError
         if "?pgbouncer=" in url or "&pgbouncer=" in url:
             from urllib.parse import parse_qs, urlencode, urlparse, urlunparse

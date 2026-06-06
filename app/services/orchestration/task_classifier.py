@@ -224,7 +224,7 @@ class TaskClassifier:
                         prompt=f"Classify this query: {query}",
                         system_prompt=system_prompt,
                     ),
-                    timeout=10.0,
+                    timeout=25.0,
                 )
 
                 # Clean response text
